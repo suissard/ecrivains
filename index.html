@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Livre - Configuration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom range slider styling */
+        input[type=range] {
+            accent-color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-indigo-600 p-6 text-white text-center">
+            <h1 class="text-3xl font-bold">📚 Création de Livre IA</h1>
+            <p class="mt-2 opacity-90">Définissez l'histoire, le contexte et le style d'écriture</p>
+        </div>
+
+        <form id="bookForm" class="p-6 md:p-10 space-y-8">
+            
+            <!-- SECTION: HISTOIRE -->
+            <section class="space-y-4">
+                <h2 class="text-xl font-semibold border-b pb-2 text-indigo-700">1. L'Histoire</h2>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Pitch général *</label>
+                    <textarea id="pitch" required rows="4" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border" placeholder="Un topo sur l'histoire générale..."></textarea>
+                </div>
+                
+                <div class="w-1/3 min-w-[200px]">
+                    <label class="block text-sm font-medium mb-1">Nombre de chapitres *</label>
+                    <input type="number" id="chapitres" required min="1" value="5" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border">
+                </div>
+            </section>
+
+            <!-- SECTION: CONTEXTE -->
+            <section class="space-y-4">
+                <h2 class="text-xl font-semibold border-b pb-2 text-indigo-700">2. Le Contexte</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Époque</label>
+                        <input type="text" id="epoque" class="w-full border-gray-300 rounded-lg shadow-sm p-3 border" placeholder="Ex: Années 20, Futuriste...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Culture</label>
+                        <input type="text" id="culture" class="w-full border-gray-300 rounded-lg shadow-sm p-3 border" placeholder="Ex: Cyberpunk, Médiévale...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Lieu</label>
+                        <input type="text" id="lieu" class="w-full border-gray-300 rounded-lg shadow-sm p-3 border" placeholder="Ex: Paris, Mars...">
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: STYLE D'ÉCRITURE -->
+            <section class="space-y-4">
+                <h2 class="text-xl font-semibold border-b pb-2 text-indigo-700">3. Style d'Écriture (1 à 10)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="slidersContainer">
+                    <!-- Sliders will be injected here by JS -->
+                </div>
+            </section>
+
+            <!-- WEBHOOK URL & SUBMIT -->
+            <section class="pt-6 border-t space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">URL du Webhook N8N *</label>
+                    <input type="url" id="webhookUrl" required class="w-full border-gray-300 rounded-lg shadow-sm p-3 border bg-gray-50" placeholder="https://ton-instance-n8n.com/webhook/...">
+                </div>
+                
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-lg">
+                    <span>🚀 Générer le Livre</span>
+                </button>
+            </section>
+            
+            <div id="statusMessage" class="hidden rounded-lg p-4 text-center font-medium"></div>
+
+        </form>
+    </div>
+
+    <script>
+        // Configuration des curseurs de style
+        const styleConfig = [
+            { id: 'longueurPhrases', label: 'Longueur des phrases', minLabel: 'Télégraphique', maxLabel: 'Proustien' },
+            { id: 'complexiteGrammaticale', label: 'Complexité grammaticale', minLabel: 'Simple', maxLabel: 'Complexe' },
+            { id: 'densiteDescriptive', label: 'Densité descriptive', minLabel: 'Minimaliste', maxLabel: 'Foisonnant' },
+            { id: 'registreLangue', label: 'Registre de langue', minLabel: 'Familier', maxLabel: 'Académique' },
+            { id: 'natureLexique', label: 'Nature du lexique', minLabel: 'Concret', maxLabel: 'Abstrait' },
+            { id: 'richesseLexicale', label: 'Richesse lexicale', minLabel: 'Usuel', maxLabel: 'Érudit' },
+            { id: 'rythme', label: 'Rythme', minLabel: 'Contemplatif', maxLabel: 'Frénétique' },
+            { id: 'engagementEmotionnel', label: 'Engagement émotionnel', minLabel: 'Clinique', maxLabel: 'Lyrique' },
+            { id: 'tonaliteHumour', label: 'Humour', minLabel: 'Sérieux', maxLabel: 'Satirique' },
+            { id: 'explicitation', label: 'Explicitation', minLabel: 'Show/Action', maxLabel: 'Tell/Explication' },
+            { id: 'introspection', label: 'Introspection', minLabel: 'Objective/Faits', maxLabel: 'Subjective/Pensées' }
+        ];
+
+        // Génération dynamique des curseurs
+        const container = document.getElementById('slidersContainer');
+        styleConfig.forEach(item => {
+            container.innerHTML += `
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="font-medium text-sm text-gray-700">${item.label}</label>
+                        <span id="val_${item.id}" class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded">5</span>
+                    </div>
+                    <input type="range" id="${item.id}" min="1" max="10" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('val_${item.id}').innerText = this.value">
+                    <div class="flex justify-between text-xs text-gray-500 mt-2">
+                        <span>${item.minLabel}</span>
+                        <span>${item.maxLabel}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Gestion de la soumission du formulaire
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = e.target.querySelector('button[type="submit"]');
+            const statusDiv = document.getElementById('statusMessage');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Envoi en cours...';
+            statusDiv.className = 'hidden rounded-lg p-4 text-center font-medium';
+
+            // Collecte des données
+            const payload = {
+                pitch: document.getElementById('pitch').value,
+                nombre_de_chapitres: parseInt(document.getElementById('chapitres').value),
+                contexte: {
+                    epoque: document.getElementById('epoque').value,
+                    culture: document.getElementById('culture').value,
+                    lieu: document.getElementById('lieu').value
+                },
+                style: {}
+            };
+
+            styleConfig.forEach(item => {
+                payload.style[item.id] = parseInt(document.getElementById(item.id).value);
+            });
+
+            const webhookUrl = document.getElementById('webhookUrl').value;
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    statusDiv.innerHTML = '✅ Données envoyées avec succès à n8n !';
+                    statusDiv.className = 'rounded-lg p-4 text-center font-medium bg-green-100 text-green-800 block';
+                } else {
+                    throw new Error('Erreur réseau');
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '❌ Erreur de connexion au Webhook. Vérifiez l\'URL.';
+                statusDiv.className = 'rounded-lg p-4 text-center font-medium bg-red-100 text-red-800 block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🚀 Générer le Livre</span>';
+            }
+        });
+    </script>
+</body>
+</html>
