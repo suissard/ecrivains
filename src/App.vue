@@ -734,14 +734,14 @@ const getPreviewFontFamily = () => {
 // --- PARAMÈTRES ET WEBHOOKS ---
 const isSettingsOpen = ref(false);
 
-const settingsUrl = ref('https://n8n.clavier.dev/webhook-test/ecrivains');
-const webhookUrl = ref('https://n8n.clavier.dev/webhook-test/ecrivains');
+const settingsUrl = ref('https://n8n.clavier.dev/webhook-test/structure-recit');
+const webhookUrl = ref('https://n8n.clavier.dev/webhook-test/structure-recit');
 
-const settingsStructureUrl = ref('https://n8n.clavier.dev/webhook-test/structure-recit');
-const webhookStructureUrl = ref('https://n8n.clavier.dev/webhook-test/structure-recit');
+const settingsStructureUrl = ref('https://n8n.clavier.dev/webhook-test/personnages');
+const webhookStructureUrl = ref('https://n8n.clavier.dev/webhook-test/personnages');
 
-const settingsPersonnagesUrl = ref('https://n8n.clavier.dev/webhook-test/personnages');
-const webhookPersonnagesUrl = ref('https://n8n.clavier.dev/webhook-test/personnages');
+const settingsPersonnagesUrl = ref('https://n8n.clavier.dev/webhook-test/chapitres');
+const webhookPersonnagesUrl = ref('https://n8n.clavier.dev/webhook-test/chapitres');
 
 const settingsChapitresUrl = ref('https://n8n.clavier.dev/webhook-test/chapitres');
 const webhookChapitresUrl = ref('https://n8n.clavier.dev/webhook-test/chapitres');
