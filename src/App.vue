@@ -447,20 +447,30 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useBookStore } from './stores/bookStore';
 
-// --- HELPERS PERSISTANCE ---
-const loadFromStorage = (key, defaultVal) => {
-  const val = localStorage.getItem(key);
-  if (val) {
-    try {
-      return JSON.parse(val);
-    } catch (e) {
-      return val; // Cas string classique
-    }
-  }
-  return defaultVal;
-};
+// --- STORE INITIALIZATION ---
+const bookStore = useBookStore();
+const {
+  currentStep,
+  form,
+  receivedStructure,
+  receivedPersonnages,
+  chapitres,
+  exportSettings,
+  webhookUrl,
+  webhookStructureUrl,
+  webhookPersonnagesUrl,
+  webhookChapitresUrl,
+  selectedModel,
+  isSubmitting, status,
+  isSubmitting2, isValidating, status2, userFeedback,
+  isSubmitting3, isValidating3, status3, userFeedbackPersonnages
+} = storeToRefs(bookStore);
+
+const { submitForm, submitStep2, submitStep3, fetchChapitres } = bookStore;
 
 // --- STEPPER CONFIGURATION ---
 const stepsList = [
@@ -470,8 +480,6 @@ const stepsList = [
   { id: 4, name: 'Chapitres' },
   { id: 5, name: 'Finale' }
 ];
-
-const currentStep = ref(1);
 
 // --- ÉTAPE 1 : BASE DU RÉCIT ---
 const styleConfig = [
@@ -488,25 +496,7 @@ const styleConfig = [
   { id: 'introspection', label: 'Introspection', minLabel: 'Objective/Faits', maxLabel: 'Subjective/Pensées' }
 ];
 
-const initialStyle = {};
-styleConfig.forEach(item => { initialStyle[item.id] = 5; });
-
-const form = reactive({
-  pitch: '',
-  chapitres: 5,
-  contexte: { epoque: '', culture: '', lieu: '' },
-  style: { ...initialStyle }
-});
-
-const isSubmitting = ref(false);
-const status = reactive({ show: false, isSuccess: false, message: '' });
-
 // --- ÉTAPE 2 : STRUCTURE ---
-const isSubmitting2 = ref(false);
-const isValidating = ref(false);
-const status2 = reactive({ show: false, isSuccess: false, message: '' });
-const receivedStructure = ref('');
-const userFeedback = ref('');
 const showRawStructure = ref(false);
 const structureCards = ref(null);
 
@@ -563,7 +553,6 @@ watch(receivedStructure, (newVal) => {
       structureCards.value = parsed;
     }
   } else {
-    // Check safely for string before using trim
     const strVal = typeof newVal === 'string' ? newVal : JSON.stringify(newVal || '');
     if (!strVal || strVal.trim() === '' || strVal === '{}') {
       structureCards.value = null;
@@ -614,11 +603,6 @@ const removeChapter = (idx) => {
 };
 
 // --- ÉTAPE 3 : PERSONNAGES ---
-const isSubmitting3 = ref(false);
-const isValidating3 = ref(false);
-const status3 = reactive({ show: false, isSuccess: false, message: '' });
-const receivedPersonnages = ref('');
-const userFeedbackPersonnages = ref('');
 const showRawPersonnages = ref(false);
 const personnagesCards = ref(null);
 
@@ -628,14 +612,12 @@ const parsePersonnagesData = (dataStr) => {
   try {
     let parsed = JSON.parse(str);
     
-    // Si c'est un tableau contenant un objet avec "personnages_principaux" en chaîne de caractères (format n8n spécifique)
     if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].personnages_principaux) {
       let inner = parsed[0].personnages_principaux;
       if (typeof inner === 'string') inner = JSON.parse(inner);
       if (Array.isArray(inner)) return inner;
     }
     
-    // Autres cas classiques
     if (parsed.personnages_principaux) {
       let inner = parsed.personnages_principaux;
       if (typeof inner === 'string') inner = JSON.parse(inner);
@@ -715,42 +697,30 @@ const removePersonnage = (idx) => {
   }
 };
 
-// --- ÉTAPE 4 : CHAPITRES ---
-const chapitres = ref([]);
-
 // --- ÉTAPE 5 : FINALE ---
-const exportSettings = reactive({
-  police: 'serif',
-  taille: 11,
-  marges: 2.5
-});
-
 const getPreviewFontFamily = () => {
-  if (exportSettings.police === 'serif') return 'Georgia, serif';
-  if (exportSettings.police === 'sans-serif') return 'Arial, sans-serif';
+  if (exportSettings.value.police === 'serif') return 'Georgia, serif';
+  if (exportSettings.value.police === 'sans-serif') return 'Arial, sans-serif';
   return 'Courier New, monospace';
+};
+
+const genererPdf = () => {
+  alert(`La fonctionnalité de génération PDF se lancera ici, avec :\n- Police : ${exportSettings.value.police}\n- Taille : ${exportSettings.value.taille}pt\n- Marges : ${exportSettings.value.marges}cm\n\n(Peut être implémenté via jsPDF ou une API backend)`);
 };
 
 // --- PARAMÈTRES ET WEBHOOKS ---
 const isSettingsOpen = ref(false);
 
-const settingsUrl = ref('https://n8n.clavier.dev/webhook-test/structure-recit');
-const webhookUrl = ref('https://n8n.clavier.dev/webhook-test/structure-recit');
-
-const settingsStructureUrl = ref('https://n8n.clavier.dev/webhook-test/personnages');
-const webhookStructureUrl = ref('https://n8n.clavier.dev/webhook-test/personnages');
-
-const settingsPersonnagesUrl = ref('https://n8n.clavier.dev/webhook-test/chapitres');
-const webhookPersonnagesUrl = ref('https://n8n.clavier.dev/webhook-test/chapitres');
-
-const settingsChapitresUrl = ref('https://n8n.clavier.dev/webhook-test/chapitres');
-const webhookChapitresUrl = ref('https://n8n.clavier.dev/webhook-test/chapitres');
+// Local settings state
+const settingsUrl = ref(webhookUrl.value);
+const settingsStructureUrl = ref(webhookStructureUrl.value);
+const settingsPersonnagesUrl = ref(webhookPersonnagesUrl.value);
+const settingsChapitresUrl = ref(webhookChapitresUrl.value);
+const settingsModel = ref(selectedModel.value);
 
 // --- OPENROUTER MODELS ---
 const availableModels = ref([]);
 const isLoadingModels = ref(false);
-const settingsModel = ref('deepseek/deepseek-v4-flash');
-const selectedModel = ref('deepseek/deepseek-v4-flash');
 const modelSearchQuery = ref('');
 const isDropdownOpen = ref(false);
 
@@ -775,58 +745,8 @@ const fetchOpenRouterModels = async () => {
 };
 
 onMounted(() => {
-  // Load Webhooks URLs from LocalStorage
-  const savedUrl = localStorage.getItem('webhookUrl');
-  if (savedUrl) { webhookUrl.value = savedUrl; settingsUrl.value = savedUrl; }
-  
-  const savedStructureUrl = localStorage.getItem('webhookStructureUrl');
-  if (savedStructureUrl) { webhookStructureUrl.value = savedStructureUrl; settingsStructureUrl.value = savedStructureUrl; }
-
-  const savedPersonnagesUrl = localStorage.getItem('webhookPersonnagesUrl');
-  if (savedPersonnagesUrl) { webhookPersonnagesUrl.value = savedPersonnagesUrl; settingsPersonnagesUrl.value = savedPersonnagesUrl; }
-
-  const savedChapitresUrl = localStorage.getItem('webhookChapitresUrl');
-  if (savedChapitresUrl) { webhookChapitresUrl.value = savedChapitresUrl; settingsChapitresUrl.value = savedChapitresUrl; }
-
-  // Load Model from LocalStorage
-  const savedModel = localStorage.getItem('selectedModel');
-  if (savedModel) {
-    selectedModel.value = savedModel;
-    settingsModel.value = savedModel;
-  }
-  modelSearchQuery.value = settingsModel.value;
-
-  // --- RÉCUPÉRATION DES DONNÉES DES ÉTAPES DEPUIS LE LOCALSTORAGE ---
-  const savedStep = loadFromStorage('bookApp_currentStep', 1);
-  currentStep.value = parseInt(savedStep, 10) || 1;
-
-  const savedForm = loadFromStorage('bookApp_form', null);
-  if (savedForm) Object.assign(form, savedForm);
-
-  receivedStructure.value = loadFromStorage('bookApp_structure', '');
-  receivedPersonnages.value = loadFromStorage('bookApp_personnages', '');
-  
-  const savedChapitres = loadFromStorage('bookApp_chapitres', []);
-  if (Array.isArray(savedChapitres)) {
-    chapitres.value = savedChapitres;
-  }
-
-  const savedExport = loadFromStorage('bookApp_exportSettings', null);
-  if (savedExport) Object.assign(exportSettings, savedExport);
-  // ------------------------------------------------------------------
-  
   fetchOpenRouterModels();
 });
-
-// --- WATCHERS POUR SAUVEGARDER L'AVANCEMENT EN TEMPS RÉEL ---
-watch(currentStep, (val) => localStorage.setItem('bookApp_currentStep', val), { deep: true });
-watch(form, (val) => localStorage.setItem('bookApp_form', JSON.stringify(val)), { deep: true });
-watch(receivedStructure, (val) => localStorage.setItem('bookApp_structure', val));
-watch(receivedPersonnages, (val) => localStorage.setItem('bookApp_personnages', val));
-watch(chapitres, (val) => localStorage.setItem('bookApp_chapitres', JSON.stringify(val)), { deep: true });
-watch(exportSettings, (val) => localStorage.setItem('bookApp_exportSettings', JSON.stringify(val)), { deep: true });
-// ------------------------------------------------------------
-
 
 // Model Dropdown Logic
 const filteredModels = computed(() => {
@@ -866,13 +786,12 @@ const closeDropdown = () => {
 
 watch(isSettingsOpen, (isOpen) => {
   if (isOpen) {
-    syncSearchQueryWithModel();
-  } else {
     settingsModel.value = selectedModel.value;
     settingsUrl.value = webhookUrl.value;
     settingsStructureUrl.value = webhookStructureUrl.value;
     settingsPersonnagesUrl.value = webhookPersonnagesUrl.value;
     settingsChapitresUrl.value = webhookChapitresUrl.value;
+    syncSearchQueryWithModel();
   }
 });
 
@@ -883,177 +802,7 @@ const saveSettings = () => {
   webhookChapitresUrl.value = settingsChapitresUrl.value;
   selectedModel.value = settingsModel.value;
   
-  localStorage.setItem('webhookUrl', webhookUrl.value);
-  localStorage.setItem('webhookStructureUrl', webhookStructureUrl.value);
-  localStorage.setItem('webhookPersonnagesUrl', webhookPersonnagesUrl.value);
-  localStorage.setItem('webhookChapitresUrl', webhookChapitresUrl.value);
-  localStorage.setItem('selectedModel', selectedModel.value);
-  
   isSettingsOpen.value = false;
-};
-
-// --- API CALLS ---
-
-const getProxiedUrl = (url) => {
-  if (import.meta.env.DEV && url.includes('n8n.clavier.dev')) {
-    return url.replace('https://n8n.clavier.dev', '/n8n-proxy');
-  }
-  return url;
-};
-
-const parseResponseContent = (textResponse) => {
-  try {
-    const json = JSON.parse(textResponse);
-    const content = json.structureRecit || json.structure || json.personnages || json.text || json.content || json.response || json;
-    return typeof content === 'string' ? content : JSON.stringify(content, null, 2);
-  } catch (e) {
-    return textResponse;
-  }
-};
-
-// SOUMISSION ÉTAPE 1
-const submitForm = async () => {
-  isSubmitting.value = true;
-  status.show = false;
-  const payload = {
-    pitch: form.pitch, nombre_de_chapitres: form.chapitres, contexte: { ...form.contexte }, style: { ...form.style }, modele: selectedModel.value
-  };
-
-  try {
-    const response = await fetch(getProxiedUrl(webhookUrl.value), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (response.ok) {
-      receivedStructure.value = parseResponseContent(await response.text());
-      currentStep.value = 2; 
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else throw new Error();
-  } catch (error) {
-    status.message = '❌ Erreur de connexion au Webhook de création.';
-    status.isSuccess = false; status.show = true;
-  } finally { isSubmitting.value = false; }
-};
-
-// SOUMISSION ÉTAPE 2
-const submitStep2 = async (validate) => {
-  isSubmitting2.value = true;
-  isValidating.value = validate;
-  status2.show = false;
-  
-  let urlToCall = validate ? webhookStructureUrl.value : webhookUrl.value;
-  let payload;
-
-  if (validate) {
-    payload = {
-      action: 'valider',
-      structure: receivedStructure.value,
-      modele: selectedModel.value
-    };
-  } else {
-    payload = {
-      pitch: form.pitch,
-      nombre_de_chapitres: form.chapitres,
-      contexte: { ...form.contexte },
-      style: { ...form.style },
-      modele: selectedModel.value,
-      corrections: userFeedback.value,
-      lastData: receivedStructure.value
-    };
-  }
-
-  try {
-    const response = await fetch(getProxiedUrl(urlToCall), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (response.ok) {
-      if (validate) {
-        // En passant à l'étape 3, on peut déjà pré-récupérer la réponse des personnages si renvoyée par le webhook de validation, ou via l'étape 3.
-        const responseText = await response.text();
-        if(responseText) {
-          receivedPersonnages.value = parseResponseContent(responseText);
-        }
-        currentStep.value = 3;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        receivedStructure.value = parseResponseContent(await response.text());
-        status2.message = '✅ Modifications reçues. La nouvelle structure a été mise à jour.';
-        status2.isSuccess = true; status2.show = true;
-        userFeedback.value = ''; 
-      }
-    } else throw new Error();
-  } catch (error) {
-    status2.message = '❌ Erreur de connexion au Webhook.';
-    status2.isSuccess = false; status2.show = true;
-  } finally { isSubmitting2.value = false; }
-};
-
-// SOUMISSION ÉTAPE 3
-const submitStep3 = async (validate) => {
-  isSubmitting3.value = true;
-  isValidating3.value = validate;
-  status3.show = false;
-  
-  let urlToCall = validate ? webhookPersonnagesUrl.value : webhookStructureUrl.value;
-  let payload;
-
-  if (validate) {
-    payload = {
-      action: 'valider',
-      personnages: receivedPersonnages.value,
-      modele: selectedModel.value
-    };
-  } else {
-    payload = {
-      action: 'valider',
-      pitch: form.pitch,
-      nombre_de_chapitres: form.chapitres,
-      contexte: { ...form.contexte },
-      style: { ...form.style },
-      structure: receivedStructure.value,
-      modele: selectedModel.value,
-      corrections: userFeedbackPersonnages.value,
-      lastData: receivedPersonnages.value
-    };
-  }
-
-  try {
-    const response = await fetch(getProxiedUrl(urlToCall), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (response.ok) {
-      if (validate) {
-        currentStep.value = 4;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        receivedPersonnages.value = parseResponseContent(await response.text());
-        status3.message = '✅ Modifications reçues. Les personnages ont été mis à jour.';
-        status3.isSuccess = true; status3.show = true;
-        userFeedbackPersonnages.value = ''; 
-      }
-    } else throw new Error();
-  } catch (error) {
-    status3.message = '❌ Erreur de connexion au Webhook.';
-    status3.isSuccess = false; status3.show = true;
-  } finally { isSubmitting3.value = false; }
-};
-
-// ACTUALISER CHAPITRES ÉTAPE 4
-const fetchChapitres = async () => {
-  try {
-    // Si l'URL attend un GET
-    const response = await fetch(getProxiedUrl(webhookChapitresUrl.value));
-    if(response.ok) {
-      const data = await response.json();
-      // On s'attend à un tableau de chapitres: [{ numero, titre, contenu }]
-      if (Array.isArray(data)) {
-        chapitres.value = data.map(c => ({ ...c, isOpen: false }));
-      } else if (data.chapitres && Array.isArray(data.chapitres)) {
-        chapitres.value = data.chapitres.map(c => ({ ...c, isOpen: false }));
-      }
-    }
-  } catch (error) {
-    console.error("Erreur lors de la récupération des chapitres", error);
-    alert("Impossible de récupérer les chapitres pour le moment.");
-  }
-};
-
-// GÉNÉRER PDF ÉTAPE 5
-const genererPdf = () => {
-  alert(`La fonctionnalité de génération PDF se lancera ici, avec :\n- Police : ${exportSettings.police}\n- Taille : ${exportSettings.taille}pt\n- Marges : ${exportSettings.marges}cm\n\n(Peut être implémenté via jsPDF ou une API backend)`);
 };
 </script>
 
