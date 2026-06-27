@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+@layer base {
+  input[type=range] {
+    accent-color: #4f46e5;
+  }
+}
