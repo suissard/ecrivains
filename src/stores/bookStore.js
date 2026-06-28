@@ -24,12 +24,16 @@ export const useBookStore = defineStore('book', () => {
   };
   
   const defaultForm = {
+    titre: '',
     pitch: '',
     chapitres: 5,
     contexte: { epoque: '', culture: '', lieu: '' },
     style: { ...initialStyle }
   };
   const form = reactive(loadFromStorage('bookApp_form', defaultForm));
+  if (form.titre === undefined) {
+    form.titre = '';
+  }
   
   const receivedStructure = ref(loadFromStorage('bookApp_structure', ''));
   const receivedPersonnages = ref(loadFromStorage('bookApp_personnages', ''));
@@ -39,8 +43,12 @@ export const useBookStore = defineStore('book', () => {
   const exportSettings = reactive(loadFromStorage('bookApp_exportSettings', {
     police: 'serif',
     taille: 11,
-    marges: 2.5
+    marges: 2.5,
+    format: 'A4'
   }));
+  if (exportSettings.format === undefined) {
+    exportSettings.format = 'A4';
+  }
 
   const webhookUrl = ref(localStorage.getItem('webhookUrl') || 'https://n8n.clavier.dev/webhook-test/structure-recit');
   const webhookStructureUrl = ref(localStorage.getItem('webhookStructureUrl') || 'https://n8n.clavier.dev/webhook-test/personnages');
@@ -72,8 +80,11 @@ export const useBookStore = defineStore('book', () => {
 
   const parseResponseContent = (textResponse) => {
     try {
-      const json = JSON.parse(textResponse);
-      const content = json.structureRecit || json.structure || json.personnages || json.text || json.content || json.response || json;
+      let json = JSON.parse(textResponse);
+      if (Array.isArray(json) && json.length > 0) {
+        json = json[0];
+      }
+      const content = json.structureRecit || json.structure || json.personnages || json.chapitre || json.chapter || json.text || json.content || json.response || json;
       return typeof content === 'string' ? content : JSON.stringify(content, null, 2);
     } catch (e) {
       return textResponse;
@@ -175,8 +186,25 @@ export const useBookStore = defineStore('book', () => {
     const baseData = { pitch: form.pitch, nombre_de_chapitres: form.chapitres, contexte: { ...form.contexte }, style: { ...form.style } };
   
     if (validate) {
+      let firstTitle = 'Chapitre 1';
+      let firstResume = '';
+      try {
+        let parsedStr = typeof receivedStructure.value === 'string' ? JSON.parse(receivedStructure.value) : receivedStructure.value;
+        if (parsedStr && !Array.isArray(parsedStr)) {
+          parsedStr = parsedStr.structureRecit || parsedStr.structure || parsedStr;
+        }
+        if (Array.isArray(parsedStr) && parsedStr[0]) {
+          firstTitle = parsedStr[0].title || parsedStr[0].titre || 'Chapitre 1';
+          firstResume = parsedStr[0].resume || parsedStr[0].summary || '';
+        }
+      } catch(e) {}
+
       payload = {
         action: 'valider',
+        chapNum: 1,
+        title: firstTitle,
+        resume: firstResume,
+        previous_chapter: '',
         base: baseData,
         structure: receivedStructure.value,
         personnages: receivedPersonnages.value,
@@ -196,6 +224,33 @@ export const useBookStore = defineStore('book', () => {
       const response = await fetch(getProxiedUrl(urlToCall), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (response.ok) {
         if (validate) {
+          // Clear old chapters (overwrite old data)
+          chapitres.value = [];
+          
+          const responseText = await response.text();
+          if (responseText && responseText.trim() !== '') {
+            let firstTitle = 'Chapitre 1';
+            let firstResume = '';
+            try {
+              let parsedStr = typeof receivedStructure.value === 'string' ? JSON.parse(receivedStructure.value) : receivedStructure.value;
+              if (parsedStr && !Array.isArray(parsedStr)) {
+                parsedStr = parsedStr.structureRecit || parsedStr.structure || parsedStr;
+              }
+              if (Array.isArray(parsedStr) && parsedStr[0]) {
+                firstTitle = parsedStr[0].title || parsedStr[0].titre || 'Chapitre 1';
+                firstResume = parsedStr[0].resume || parsedStr[0].summary || '';
+              }
+            } catch(e) {}
+
+            const chapterContent = parseResponseContent(responseText);
+            chapitres.value.push({
+              numero: 1,
+              titre: firstTitle,
+              resume: firstResume,
+              contenu: chapterContent,
+              isOpen: true
+            });
+          }
           currentStep.value = 4;
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
@@ -216,10 +271,18 @@ export const useBookStore = defineStore('book', () => {
       const response = await fetch(getProxiedUrl(webhookChapitresUrl.value));
       if(response.ok) {
         const data = await response.json();
+        const normalize = (c, index) => {
+          return {
+            numero: c.numero || c.chapNum || c.num || (index + 1),
+            titre: c.titre || c.title || '',
+            contenu: c.contenu || c.chapter || c.chapitre || c.text || c.content || '',
+            isOpen: c.isOpen !== undefined ? c.isOpen : false
+          };
+        };
         if (Array.isArray(data)) {
-          chapitres.value = data.map(c => ({ ...c, isOpen: false }));
+          chapitres.value = data.map((c, index) => normalize(c, index));
         } else if (data.chapitres && Array.isArray(data.chapitres)) {
-          chapitres.value = data.chapitres.map(c => ({ ...c, isOpen: false }));
+          chapitres.value = data.chapitres.map((c, index) => normalize(c, index));
         }
       }
     } catch (error) {

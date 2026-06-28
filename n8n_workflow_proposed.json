@@ -1,0 +1,200 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-chapter",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        144
+      ],
+      "id": "4f88ed0d-2e52-4abd-9e61-34590aed6742",
+      "name": "Webhook Frontend",
+      "webhookId": "bde6665d-b888-4812-aa5d-6a6cf873286f"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f8a7c2b0-1234-4567-890a-bcdef1234567",
+              "name": "prompt",
+              "value": "={{ 'Tu es un écrivain professionnel et tu dois rédiger le chapitre suivant :\\nChapitre ' + $json.data.chapNum + '\\nTitre : ' + ($json.data.title || '') + '\\nRésumé attendu : ' + ($json.data.resume || 'Continue l\\'histoire') + '\\n\\nPersonnages : ' + (typeof $json.data.personnages === 'string' ? $json.data.personnages : JSON.stringify($json.data.personnages) || 'Inconnus') + '\\n\\nDernier chapitre :\\n' + ($json.data.previous_chapter || 'C\\'est le début de l\\'histoire.') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        992,
+        144
+      ],
+      "id": "a53379dd-2fdf-4755-a5ce-857814d5abef",
+      "name": "Préparer Prompt"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        144
+      ],
+      "id": "ac2075db-6b7f-4d61-a69e-00dbce87ba72",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v4-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        352
+      ],
+      "id": "0d93d6bc-43ff-41c1-802b-98a8907ab174",
+      "name": "DeepSeek",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "SVGZi345Xr0FCQBY",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return { chapter: $input.all()[0].json.output };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        144
+      ],
+      "id": "633d6566-971b-4f33-a248-046128319d37",
+      "name": "extractChapter"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1216,
+        144
+      ],
+      "id": "dc7d29c8-5e9f-497f-a453-eeb5c6eab867",
+      "name": "Rédaction chapitre"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "95ad058d-13f2-42eb-ab70-00282a3cea66",
+              "name": "data",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        144
+      ],
+      "id": "a8d6fb39-48f0-467d-9389-12f574877f1c",
+      "name": "getBody"
+    }
+  ],
+  "connections": {
+    "Webhook Frontend": {
+      "main": [
+        [
+          {
+            "node": "getBody",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer Prompt": {
+      "main": [
+        [
+          {
+            "node": "Rédaction chapitre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Rédaction chapitre",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extractChapter": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rédaction chapitre": {
+      "main": [
+        [
+          {
+            "node": "extractChapter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getBody": {
+      "main": [
+        [
+          {
+            "node": "Préparer Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "2b8a9ae1093cca13e275d12302448f51a2f59dc10bdfe2f99afb7073096f27e1"
+  }
+}

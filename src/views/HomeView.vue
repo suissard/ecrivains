@@ -38,6 +38,11 @@
           <h2 class="text-xl font-semibold border-b pb-2 text-indigo-700">1. L'Histoire</h2>
 
           <div>
+            <label class="block text-sm font-medium mb-1">Titre du livre *</label>
+            <input type="text" v-model="form.titre" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border mb-3" placeholder="Entrez le titre de votre livre...">
+          </div>
+
+          <div>
             <label class="block text-sm font-medium mb-1">Pitch général *</label>
             <textarea v-model="form.pitch" required rows="4" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border" placeholder="Un topo sur l'histoire générale..."></textarea>
           </div>
@@ -242,36 +247,9 @@
           <p class="text-gray-500 mt-1">Lisez votre récit au fur et à mesure de sa création</p>
         </div>
 
-        <section class="space-y-4">
-          <div class="flex justify-end border-b pb-2">
-            <button @click="fetchChapitres" class="text-sm bg-indigo-100 text-indigo-700 px-4 py-2 font-medium rounded-lg hover:bg-indigo-200 transition-colors flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              Actualiser les chapitres
-            </button>
-          </div>
+        <ChapterGenerator />
 
-          <div v-if="chapitres.length === 0" class="text-center py-16 text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            Aucun chapitre n'est encore disponible.<br> Lancez la génération depuis n8n et actualisez la page.
-          </div>
 
-          <div v-else class="space-y-6">
-            <div v-for="(chap, idx) in chapitres" :key="idx" class="bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm transition-all">
-              <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center cursor-pointer hover:bg-gray-100" @click="chap.isOpen = !chap.isOpen">
-                <h3 class="font-bold text-gray-800 text-lg">Chapitre {{ chap.numero }} <span v-if="chap.titre" class="font-normal opacity-75"> - {{ chap.titre }}</span></h3>
-                <span class="text-gray-500">
-                  <svg v-if="chap.isOpen" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd" /></svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                </span>
-              </div>
-              <div v-if="chap.isOpen" class="p-6 md:p-8 prose max-w-none text-gray-800 leading-relaxed whitespace-pre-wrap text-lg">
-                {{ chap.contenu }}
-              </div>
-            </div>
-          </div>
-        </section>
 
         <section class="pt-6 border-t mt-8">
           <button @click="currentStep = 5" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-lg">
@@ -292,6 +270,19 @@
             <!-- Settings -->
             <div class="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 class="font-bold text-gray-800 mb-4 text-lg border-b pb-2">Paramètres de mise en page</h3>
+
+              <div>
+                <label class="block text-sm font-semibold mb-2 text-gray-700">Titre du livre</label>
+                <input type="text" v-model="form.titre" class="w-full border-gray-300 rounded-lg shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500 bg-white" placeholder="Titre de l'œuvre...">
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold mb-2 text-gray-700">Format de page</label>
+                <select v-model="exportSettings.format" class="w-full border-gray-300 rounded-lg shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                  <option value="A4">A4 (Standard, Impression)</option>
+                  <option value="A5">A5 (Roman, Format poche)</option>
+                </select>
+              </div>
 
               <div>
                 <label class="block text-sm font-semibold mb-2 text-gray-700">Police de caractères</label>
@@ -328,17 +319,23 @@
               >
                 <!-- Page container -->
                 <div
-                  class="bg-white shadow-xl transition-all flex flex-col items-center justify-center text-justify border relative"
+                  class="bg-white shadow-xl transition-all flex flex-col justify-start text-justify border relative"
                   :style="{
-                    width: '300px',
-                    height: '424px', // Aspect ratio of A5 roughly
-                    padding: `${exportSettings.marges * 6}px`,
+                    width: exportSettings.format === 'A5' ? '280px' : '330px',
+                    height: exportSettings.format === 'A5' ? '396px' : '467px',
+                    padding: `${exportSettings.marges * 5}px`,
                     fontSize: `${exportSettings.taille}px`,
                     lineHeight: '1.5'
                   }"
                 >
-                  <h4 class="font-bold mb-4 text-center w-full" :style="{ fontSize: `${exportSettings.taille * 1.5}px` }">Chapitre 1</h4>
-                  <p class="w-full h-full overflow-hidden text-ellipsis">Il était une fois, dans une contrée lointaine, une histoire qui s'écrivait d'elle-même. Les mots coulaient sur le papier avec une fluidité déconcertante, guidés par une intelligence artificielle tissant les fils du destin de personnages encore inconnus la veille. La nuit tombait lentement sur la ville endormie, effaçant les contours...</p>
+                  <!-- Subtle page running header -->
+                  <div class="w-full text-[8px] text-gray-400 border-b border-gray-100 pb-1 mb-4 flex justify-between uppercase tracking-wider">
+                    <span>{{ form.titre || 'Mon Roman' }}</span>
+                    <span>Page 1</span>
+                  </div>
+
+                  <h4 class="font-bold mb-2 text-center w-full" :style="{ fontSize: `${exportSettings.taille * 1.3}px` }">Chapitre 1 : Le Début</h4>
+                  <p class="w-full overflow-hidden text-ellipsis leading-relaxed" :style="{ textIndent: exportSettings.police === 'serif' ? '12px' : '0' }">Il était une fois, dans une contrée lointaine, une histoire qui s'écrivait d'elle-même. Les mots coulaient sur le papier avec une fluidité déconcertante, guidés par une intelligence artificielle tissant les fils du destin de personnages encore inconnus la veille. La nuit tombait lentement sur la ville endormie, effaçant les contours...</p>
                 </div>
               </div>
             </div>
@@ -464,6 +461,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useBookStore } from '../stores/bookStore';
+import ChapterGenerator from '../components/ChapterGenerator.vue';
+import { generateBookPDF } from '../utils/pdfGenerator';
 
 // --- STORE INITIALIZATION ---
 const bookStore = useBookStore();
@@ -719,7 +718,13 @@ const getPreviewFontFamily = () => {
 };
 
 const genererPdf = () => {
-  alert(`La fonctionnalité de génération PDF se lancera ici, avec :\n- Police : ${exportSettings.value.police}\n- Taille : ${exportSettings.value.taille}pt\n- Marges : ${exportSettings.value.marges}cm\n\n(Peut être implémenté via jsPDF ou une API backend)`);
+  generateBookPDF({
+    titre: form.value.titre,
+    pitch: form.value.pitch,
+    contexte: form.value.contexte,
+    chapitres: chapitres.value,
+    settings: exportSettings.value
+  });
 };
 
 // --- PARAMÈTRES ET WEBHOOKS ---
