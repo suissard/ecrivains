@@ -80,8 +80,11 @@
         <!-- Chapter Body (Expanded/Collapsed content) -->
         <div>
           <!-- Expanded + Written -->
-          <div v-if="isChapterOpen(chap.chapNum || idx + 1) && isChapterWritten(chap.chapNum || idx + 1)" class="p-6 md:p-8 prose max-w-none text-gray-800 leading-relaxed whitespace-pre-wrap text-lg border-t border-gray-100 animate-fade-in">
-            {{ getChapterContenu(chap.chapNum || idx + 1) }}
+          <div 
+            v-if="isChapterOpen(chap.chapNum || idx + 1) && isChapterWritten(chap.chapNum || idx + 1)" 
+            class="p-6 md:p-8 prose max-w-none text-gray-800 leading-relaxed text-lg border-t border-gray-100 animate-fade-in markdown-body"
+            v-html="renderMarkdown(getChapterContenu(chap.chapNum || idx + 1))"
+          >
           </div>
 
           <!-- Expanded + Not Written -->
@@ -109,9 +112,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useBookStore } from '../stores/bookStore';
+import { marked } from 'marked';
+
+const renderMarkdown = (text) => {
+  if (!text) return '';
+  return marked.parse(text);
+};
 
 const bookStore = useBookStore();
 const { 
@@ -120,14 +129,14 @@ const {
   receivedPersonnages, 
   selectedModel, 
   webhookChapitresUrl,
-  chapitres
+  chapitres,
+  isWriting,
+  writingMode,
+  currentWritingChapter,
+  chapterStatusMessage: statusMessage,
+  chapterStatusError: statusError,
+  autoStartChapters
 } = storeToRefs(bookStore);
-
-const isWriting = ref(false);
-const writingMode = ref('all'); // 'all' or 'single'
-const currentWritingChapter = ref(1);
-const statusMessage = ref('');
-const statusError = ref(false);
 
 const openChapters = ref({}); // Keep track of open chapter numbers
 
@@ -289,7 +298,7 @@ async function writeSingleChapter(num) {
   }
 }
 
-// Generate all chapters sequentially
+// Generate all chapters sequentially (resuming or starting fresh)
 async function startWritingAll() {
   if (isWriting.value) return;
   
@@ -298,10 +307,31 @@ async function startWritingAll() {
   statusError.value = false;
   statusMessage.value = 'Initialisation de la rédaction globale...';
   
-  // Clear previous chapters for a clean start
-  chapitres.value = [];
-
+  // Find the first chapter that is not yet written
+  let startChapter = 1;
   for (let i = 1; i <= totalChapters.value; i++) {
+    if (!isChapterWritten(i)) {
+      startChapter = i;
+      break;
+    }
+  }
+
+  // Check if all chapters are already written
+  let allWritten = true;
+  for (let i = 1; i <= totalChapters.value; i++) {
+    if (!isChapterWritten(i)) {
+      allWritten = false;
+      break;
+    }
+  }
+
+  if (allWritten) {
+    // If all are already written, clear and restart from chapter 1
+    chapitres.value = [];
+    startChapter = 1;
+  }
+
+  for (let i = startChapter; i <= totalChapters.value; i++) {
     currentWritingChapter.value = i;
     statusMessage.value = `Rédaction du chapitre ${i} en cours...`;
     
@@ -319,4 +349,52 @@ async function startWritingAll() {
   statusMessage.value = '✨ Le livre a été entièrement rédigé !';
   isWriting.value = false;
 }
+
+onMounted(() => {
+  // Automatically trigger if autoStartChapters is true OR if there are no chapters generated yet
+  if (((autoStartChapters && autoStartChapters.value) || chapitres.value.length === 0) && !isWriting.value) {
+    if (autoStartChapters) {
+      autoStartChapters.value = false; // Reset the transient flag
+    }
+    startWritingAll();
+  }
+});
 </script>
+
+<style scoped>
+:deep(.markdown-body) h1,
+:deep(.markdown-body) h2,
+:deep(.markdown-body) h3,
+:deep(.markdown-body) h4 {
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+}
+:deep(.markdown-body) h1 { font-size: 1.5rem; }
+:deep(.markdown-body) h2 { font-size: 1.35rem; }
+:deep(.markdown-body) h3 { font-size: 1.2rem; }
+:deep(.markdown-body) p {
+  margin-bottom: 1rem;
+}
+:deep(.markdown-body) p:last-child {
+  margin-bottom: 0;
+}
+:deep(.markdown-body) ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+:deep(.markdown-body) ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+:deep(.markdown-body) blockquote {
+  border-left: 4px solid #cbd5e1;
+  padding-left: 1rem;
+  color: #475569;
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+</style>
