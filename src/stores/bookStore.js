@@ -13,6 +13,18 @@ const loadFromStorage = (key, defaultVal) => {
   return defaultVal;
 };
 
+const loadWebhook = (key, defaultVal) => {
+  let val = localStorage.getItem(key);
+  if (val) {
+    if (val.includes('/webhook-test/')) {
+      val = val.replace('/webhook-test/', '/webhook/');
+      localStorage.setItem(key, val);
+    }
+    return val;
+  }
+  return defaultVal;
+};
+
 export const useBookStore = defineStore('book', () => {
   // --- STATE ---
   const currentStep = ref(parseInt(loadFromStorage('bookApp_currentStep', 1), 10));
@@ -50,10 +62,10 @@ export const useBookStore = defineStore('book', () => {
     exportSettings.format = 'A4';
   }
 
-  const webhookUrl = ref(localStorage.getItem('webhookUrl') || 'https://n8n.clavier.dev/webhook-test/structure-recit');
-  const webhookStructureUrl = ref(localStorage.getItem('webhookStructureUrl') || 'https://n8n.clavier.dev/webhook-test/personnages');
-  const webhookPersonnagesUrl = ref(localStorage.getItem('webhookPersonnagesUrl') || 'https://n8n.clavier.dev/webhook-test/chapitres');
-  const webhookChapitresUrl = ref(localStorage.getItem('webhookChapitresUrl') || 'https://n8n.clavier.dev/webhook-test/chapitres');
+  const webhookUrl = ref(loadWebhook('webhookUrl', 'https://n8n.clavier.dev/webhook/structure-recit'));
+  const webhookStructureUrl = ref(loadWebhook('webhookStructureUrl', 'https://n8n.clavier.dev/webhook/personnages'));
+  const webhookPersonnagesUrl = ref(loadWebhook('webhookPersonnagesUrl', 'https://n8n.clavier.dev/webhook/chapitres'));
+  const webhookChapitresUrl = ref(loadWebhook('webhookChapitresUrl', 'https://n8n.clavier.dev/webhook/chapitres'));
   const selectedModel = ref(localStorage.getItem('selectedModel') || 'deepseek/deepseek-v4-flash');
 
   // --- WATCHERS FOR LOCALSTORAGE PERSISTENCE ---
@@ -268,7 +280,24 @@ export const useBookStore = defineStore('book', () => {
 
   const fetchChapitres = async () => {
     try {
-      const response = await fetch(getProxiedUrl(webhookChapitresUrl.value));
+      const payload = {
+        action: 'recuperer',
+        base: { 
+          pitch: form.pitch, 
+          nombre_de_chapitres: form.chapitres, 
+          contexte: { ...form.contexte }, 
+          style: { ...form.style } 
+        },
+        structure: receivedStructure.value,
+        personnages: receivedPersonnages.value,
+        modele: selectedModel.value
+      };
+      
+      const response = await fetch(getProxiedUrl(webhookChapitresUrl.value), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
       if(response.ok) {
         const data = await response.json();
         const normalize = (c, index) => {
@@ -291,6 +320,38 @@ export const useBookStore = defineStore('book', () => {
     }
   };
 
+  const resetAllData = () => {
+    currentStep.value = 1;
+    form.titre = '';
+    form.pitch = '';
+    form.chapitres = 5;
+    form.contexte = { epoque: '', culture: '', lieu: '' };
+    form.style = { ...initialStyle };
+    receivedStructure.value = '';
+    receivedPersonnages.value = '';
+    chapitres.value = [];
+  };
+
+  const deleteChapter = (num) => {
+    chapitres.value = chapitres.value.filter(c => c.numero !== num);
+  };
+
+  const resetStep = (stepNum) => {
+    if (stepNum === 1) {
+      form.titre = '';
+      form.pitch = '';
+      form.chapitres = 5;
+      form.contexte = { epoque: '', culture: '', lieu: '' };
+      form.style = { ...initialStyle };
+    } else if (stepNum === 2) {
+      receivedStructure.value = '';
+    } else if (stepNum === 3) {
+      receivedPersonnages.value = '';
+    } else if (stepNum === 4) {
+      chapitres.value = [];
+    }
+  };
+
   return {
     currentStep,
     form,
@@ -306,6 +367,9 @@ export const useBookStore = defineStore('book', () => {
     isSubmitting, status, submitForm,
     isSubmitting2, isValidating, status2, userFeedback, submitStep2,
     isSubmitting3, isValidating3, status3, userFeedbackPersonnages, submitStep3,
-    fetchChapitres
+    fetchChapitres,
+    resetAllData,
+    deleteChapter,
+    resetStep
   };
 });
