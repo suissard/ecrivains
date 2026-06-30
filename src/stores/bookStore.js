@@ -20,6 +20,10 @@ const loadWebhook = (key, defaultVal) => {
       val = val.replace('/webhook-test/', '/webhook/');
       localStorage.setItem(key, val);
     }
+    if ((key === 'webhookPersonnagesUrl' || key === 'webhookChapitresUrl') && val === 'https://n8n.clavier.dev/webhook/chapitres') {
+      val = defaultVal;
+      localStorage.setItem(key, val);
+    }
     return val;
   }
   return defaultVal;
@@ -78,8 +82,8 @@ export const useBookStore = defineStore('book', () => {
 
   const webhookUrl = ref(loadWebhook('webhookUrl', 'https://n8n.clavier.dev/webhook/structure-recit'));
   const webhookStructureUrl = ref(loadWebhook('webhookStructureUrl', 'https://n8n.clavier.dev/webhook/personnages'));
-  const webhookPersonnagesUrl = ref(loadWebhook('webhookPersonnagesUrl', 'https://n8n.clavier.dev/webhook/chapitres'));
-  const webhookChapitresUrl = ref(loadWebhook('webhookChapitresUrl', 'https://n8n.clavier.dev/webhook/chapitres'));
+  const webhookPersonnagesUrl = ref(loadWebhook('webhookPersonnagesUrl', 'https://n8n.clavier.dev/webhook/generate-chapter'));
+  const webhookChapitresUrl = ref(loadWebhook('webhookChapitresUrl', 'https://n8n.clavier.dev/webhook/generate-chapter'));
   const selectedModel = ref(localStorage.getItem('selectedModel') || 'deepseek/deepseek-v4-flash');
 
   // --- WATCHERS FOR LOCALSTORAGE PERSISTENCE ---
