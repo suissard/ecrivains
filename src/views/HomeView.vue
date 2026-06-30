@@ -215,6 +215,8 @@
           <button @click="confirmResetStep(2)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             Effacer cette étape
+          </button>
+        </div>
         <div class="text-center mb-6">
           <button 
             v-if="!isSubmitting"
@@ -345,6 +347,7 @@
           <button @click="confirmResetStep(3)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             Effacer cette étape
+          </button>
           <button 
             v-if="!isSubmitting2"
             @click="rerollStep(3)"
@@ -437,31 +440,15 @@
                   <div v-for="(value, key) in perso" :key="key" v-show="key !== 'Nom'">
                     <label class="block text-xs font-semibold text-gray-500 mb-1 capitalize">{{ String(key).replace(/_/g, ' ') }}</label>
                     <textarea v-model="perso[key]" v-auto-resize rows="1" class="w-full text-sm text-gray-700 bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none overflow-hidden" :placeholder="String(key).replace(/_/g, ' ')"></textarea>
-              <div v-if="!showRawPersonnages && personnagesCards && personnagesCards.length > 0" class="space-y-4">
-                <div v-for="(perso, idx) in personnagesCards" :key="idx" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm relative group hover:border-indigo-300 transition-colors">
-                  <div class="flex justify-between items-center mb-4">
-                    <div class="flex items-center gap-2 w-full">
-                      <span class="bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">{{ idx + 1 }}</span>
-                      <input type="text" v-model="perso.Nom" class="font-bold text-indigo-800 bg-transparent border-b border-transparent focus:border-indigo-500 focus:outline-none px-1 py-0.5 text-lg w-full max-w-sm" placeholder="Nom du personnage" />
-                    </div>
-                    <button @click="removePersonnage(idx)" type="button" class="text-red-500 hover:bg-red-100 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Supprimer ce personnage">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div v-for="(value, key) in perso" :key="key" v-show="key !== 'Nom'">
-                      <label class="block text-xs font-semibold text-gray-500 mb-1 capitalize">{{ String(key).replace(/_/g, ' ') }}</label>
-                      <textarea v-model="perso[key]" v-auto-resize rows="1" class="w-full text-sm text-gray-700 bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none overflow-hidden" :placeholder="String(key).replace(/_/g, ' ')"></textarea>
-                    </div>
                   </div>
                 </div>
-
-                <button @click="addPersonnage" type="button" class="w-full py-4 border-2 border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50 hover:border-indigo-400 font-medium transition-colors flex justify-center items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                  Ajouter un personnage
-                </button>
               </div>
+
+              <button @click="addPersonnage" type="button" class="w-full py-4 border-2 border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50 hover:border-indigo-400 font-medium transition-colors flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                Ajouter un personnage
+              </button>
+            </div>
 
               <div v-else>
                 <textarea v-model="receivedPersonnages" rows="15" class="w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-4 border font-mono text-sm leading-relaxed" placeholder="Les personnages générés apparaîtront ici (format JSON supporté)..."></textarea>
@@ -501,6 +488,7 @@
           <button @click="confirmResetStep(4)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             Effacer cette étape
+          </button>
           <button 
             v-if="!isSubmitting3"
             @click="rerollStep(4)"

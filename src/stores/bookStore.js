@@ -422,7 +422,7 @@ export const useBookStore = defineStore('book', () => {
     fetchChapitres,
     resetAllData,
     deleteChapter,
-    resetStep
+    resetStep,
     isWriting, writingMode, currentWritingChapter, chapterStatusMessage, chapterStatusError
   };
 });
