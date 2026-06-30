@@ -5,7 +5,7 @@
         <h3 class="text-xl font-bold text-gray-800">Rédaction du Livre ✍️</h3>
         <p class="text-gray-500 text-sm mt-1">Générez tous vos chapitres à la suite ou rédigez-les un par un à votre rythme.</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 flex-wrap">
         <button 
           @click="startWritingAll" 
           :disabled="isWriting" 
@@ -17,6 +17,15 @@
           </svg>
           <span v-if="isWriting && writingMode === 'all'">Rédaction ({{ currentWritingChapter }}/{{ totalChapters }})...</span>
           <span v-else>🚀 Tout générer à la suite</span>
+        </button>
+        <button 
+          v-if="chapitres.length > 0"
+          @click="confirmResetChapters" 
+          :disabled="isWriting" 
+          class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          Effacer les rédactions
         </button>
       </div>
     </div>
@@ -67,6 +76,17 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               <span>{{ isChapterWritten(chap.chapNum || idx + 1) ? 'Régénérer' : 'Rédiger' }}</span>
+            </button>
+
+            <!-- Delete Chapter Button -->
+            <button 
+              v-if="isChapterWritten(chap.chapNum || idx + 1)"
+              @click.stop="confirmDeleteChapter(chap.chapNum || idx + 1)"
+              :disabled="isWriting"
+              class="bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold p-1.5 rounded-lg text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 shadow-sm"
+              title="Supprimer la rédaction"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             </button>
 
             <!-- Arrow Icon -->
@@ -307,6 +327,7 @@ async function startWritingAll() {
   statusError.value = false;
   statusMessage.value = 'Initialisation de la rédaction globale...';
   
+  let generatedAny = false;
   // Find the first chapter that is not yet written
   let startChapter = 1;
   for (let i = 1; i <= totalChapters.value; i++) {
@@ -346,10 +367,25 @@ async function startWritingAll() {
     }
   }
   
-  statusMessage.value = '✨ Le livre a été entièrement rédigé !';
+  if (generatedAny) {
+    statusMessage.value = '✨ Les chapitres manquants ont été rédigés !';
+  } else {
+    statusMessage.value = 'ℹ️ Tous les chapitres sont déjà rédigés.';
+  }
   isWriting.value = false;
 }
 
+const confirmDeleteChapter = (num) => {
+  if (confirm(`Voulez-vous vraiment supprimer le contenu rédigé du chapitre ${num} ?`)) {
+    bookStore.deleteChapter(num);
+  }
+};
+
+const confirmResetChapters = () => {
+  if (confirm("Voulez-vous vraiment réinitialiser et effacer TOUS les chapitres rédigés ? Cette action est irréversible.")) {
+    chapitres.value = [];
+  }
+};
 onMounted(() => {
   // Automatically trigger if autoStartChapters is true OR if there are no chapters generated yet
   if (((autoStartChapters && autoStartChapters.value) || chapitres.value.length === 0) && !isWriting.value) {

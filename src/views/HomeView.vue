@@ -1,8 +1,15 @@
 <template>
   <div class="bg-gray-100 text-gray-800 font-sans min-h-screen p-4 md:p-8 relative">
     <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-      <div class="bg-indigo-600 p-6 text-white text-center">
-        <h1 class="text-3xl font-bold">📚 Création de Livre IA</h1>
+      <div class="bg-indigo-600 p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="sm:w-1/4"></div>
+        <h1 class="text-3xl font-bold text-center">📚 Création de Livre IA</h1>
+        <div class="sm:w-1/4 flex sm:justify-end">
+          <button @click="confirmResetAll" class="bg-red-500/80 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors text-sm flex items-center gap-1.5 backdrop-blur-sm border border-red-400/30">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Réinitialiser tout
+          </button>
+        </div>
       </div>
 
       <!-- STEPPER -->
@@ -117,9 +124,15 @@
 
       <!-- ÉTAPE 1: FORMULAIRE INITIAL -->
       <form v-if="currentStep === 1" @submit.prevent="submitForm" class="p-6 md:p-10 space-y-8 animate-fade-in">
-        <div class="text-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-800">Base du récit</h2>
-          <p class="text-gray-500 mt-1">Définissez l'histoire, le contexte et le style d'écriture</p>
+        <div class="flex flex-col sm:flex-row justify-between items-center border-b pb-4 gap-4 mb-6">
+          <div class="text-center sm:text-left">
+            <h2 class="text-2xl font-bold text-gray-800">Base du récit</h2>
+            <p class="text-gray-500 mt-1">Définissez l'histoire, le contexte et le style d'écriture</p>
+          </div>
+          <button @click="confirmResetStep(1)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Effacer cette étape
+          </button>
         </div>
 
         <!-- SECTION: HISTOIRE -->
@@ -194,9 +207,15 @@
 
       <!-- ÉTAPE 2: VALIDATION DE LA STRUCTURE -->
       <div v-if="currentStep === 2" class="p-6 md:p-10 space-y-8 animate-fade-in">
+        <div class="flex flex-col sm:flex-row justify-between items-center border-b pb-4 gap-4 mb-6">
+          <div class="text-center sm:text-left">
+            <h2 class="text-2xl font-bold text-gray-800">Structure du Récit</h2>
+            <p class="text-gray-500 mt-1">Validez ou demandez des modifications sur la structure proposée</p>
+          </div>
+          <button @click="confirmResetStep(2)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Effacer cette étape
         <div class="text-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-800">Structure du Récit</h2>
-          <p class="text-gray-500 mt-1">Validez ou demandez des modifications sur la structure proposée</p>
           <button 
             v-if="!isSubmitting"
             @click="rerollStep(2)"
@@ -318,9 +337,14 @@
 
       <!-- ÉTAPE 3: PERSONNAGES -->
       <div v-if="currentStep === 3" class="p-6 md:p-10 space-y-8 animate-fade-in">
-        <div class="text-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-800">Personnages</h2>
-          <p class="text-gray-500 mt-1">Découvrez et ajustez les personnages de votre récit</p>
+        <div class="flex flex-col sm:flex-row justify-between items-center border-b pb-4 gap-4 mb-6">
+          <div class="text-center sm:text-left">
+            <h2 class="text-2xl font-bold text-gray-800">Personnages</h2>
+            <p class="text-gray-500 mt-1">Découvrez et ajustez les personnages de votre récit</p>
+          </div>
+          <button @click="confirmResetStep(3)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Effacer cette étape
           <button 
             v-if="!isSubmitting2"
             @click="rerollStep(3)"
@@ -391,6 +415,28 @@
                 </button>
               </div>
 
+            <div v-if="!showRawPersonnages && personnagesCards && personnagesCards.length > 0" class="space-y-4">
+              <div v-for="(perso, idx) in personnagesCards" :key="idx" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm relative group hover:border-indigo-300 transition-colors">
+                <div class="flex justify-between items-center mb-4 cursor-pointer hover:bg-gray-200/50 p-1.5 rounded-lg select-none" @click="togglePersonnageOpen(idx)">
+                  <div class="flex items-center gap-2 w-full" @click.stop>
+                    <span class="bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">{{ idx + 1 }}</span>
+                    <input type="text" v-model="perso.Nom" class="font-bold text-indigo-800 bg-transparent border-b border-transparent focus:border-indigo-500 focus:outline-none px-1 py-0.5 text-lg w-full max-w-sm" placeholder="Nom du personnage" />
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button @click.stop="removePersonnage(idx)" type="button" class="text-red-500 hover:bg-red-100 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Supprimer ce personnage">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                    <span class="text-gray-500">
+                      <svg v-if="isPersonnageOpen(idx)" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd" /></svg>
+                      <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    </span>
+                  </div>
+                </div>
+
+                <div v-if="isPersonnageOpen(idx)" class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4 border-gray-200/50">
+                  <div v-for="(value, key) in perso" :key="key" v-show="key !== 'Nom'">
+                    <label class="block text-xs font-semibold text-gray-500 mb-1 capitalize">{{ String(key).replace(/_/g, ' ') }}</label>
+                    <textarea v-model="perso[key]" v-auto-resize rows="1" class="w-full text-sm text-gray-700 bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none overflow-hidden" :placeholder="String(key).replace(/_/g, ' ')"></textarea>
               <div v-if="!showRawPersonnages && personnagesCards && personnagesCards.length > 0" class="space-y-4">
                 <div v-for="(perso, idx) in personnagesCards" :key="idx" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm relative group hover:border-indigo-300 transition-colors">
                   <div class="flex justify-between items-center mb-4">
@@ -447,9 +493,14 @@
 
       <!-- ÉTAPE 4: CHAPITRES -->
       <div v-if="currentStep === 4" class="p-6 md:p-10 space-y-8 animate-fade-in">
-        <div class="text-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-800">Lecture des Chapitres</h2>
-          <p class="text-gray-500 mt-1">Lisez votre récit au fur et à mesure de sa création</p>
+        <div class="flex flex-col sm:flex-row justify-between items-center border-b pb-4 gap-4 mb-6">
+          <div class="text-center sm:text-left">
+            <h2 class="text-2xl font-bold text-gray-800">Lecture des Chapitres</h2>
+            <p class="text-gray-500 mt-1">Lisez votre récit au fur et à mesure de sa création</p>
+          </div>
+          <button @click="confirmResetStep(4)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Effacer cette étape
           <button 
             v-if="!isSubmitting3"
             @click="rerollStep(4)"
@@ -1541,6 +1592,35 @@ const saveSettings = () => {
   selectedModel.value = settingsModel.value;
 
   isSettingsOpen.value = false;
+};
+
+const confirmResetAll = () => {
+  if (confirm("Voulez-vous vraiment réinitialiser toutes les données de l'application ? Cette action supprimera tout votre travail et est irréversible.")) {
+    bookStore.resetAllData();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+
+const confirmResetStep = (stepNum) => {
+  let stepName = "";
+  if (stepNum === 1) stepName = "la base du récit (pitch, style, etc.)";
+  else if (stepNum === 2) stepName = "la structure générée";
+  else if (stepNum === 3) stepName = "la liste des personnages";
+  else if (stepNum === 4) stepName = "les chapitres rédigés";
+  
+  if (confirm(`Voulez-vous vraiment effacer les données de l'étape : ${stepName} ?`)) {
+    bookStore.resetStep(stepNum);
+  }
+};
+
+const openPersonnages = ref({});
+
+const isPersonnageOpen = (idx) => {
+  return openPersonnages.value[idx] !== false;
+};
+
+const togglePersonnageOpen = (idx) => {
+  openPersonnages.value[idx] = !isPersonnageOpen(idx);
 };
 </script>
 
