@@ -13,22 +13,111 @@
       </div>
 
       <!-- STEPPER -->
-      <nav aria-label="Progress" class="py-6 px-2 md:px-12 bg-gray-50 border-b">
-        <ol role="list" class="flex items-center justify-between">
+      <nav aria-label="Progress" class="py-6 px-4 md:px-12 bg-gray-50 border-b">
+        <ol role="list" class="flex items-center justify-between gap-2 max-w-4xl mx-auto">
           <li v-for="(step, index) in stepsList" :key="step.id" class="relative flex flex-col items-center flex-1">
-            <!-- Line -->
-            <div v-if="index !== stepsList.length - 1" class="absolute top-4 md:top-5 left-1/2 w-full h-1" :class="currentStep > step.id ? 'bg-indigo-600' : 'bg-gray-200'" aria-hidden="true"></div>
+            <!-- Connecting Line -->
+            <div 
+              v-if="index !== stepsList.length - 1" 
+              class="absolute top-5 md:top-6 left-1/2 w-full h-[3px] transition-all duration-500" 
+              :class="getLineClass(index)" 
+              aria-hidden="true"
+            ></div>
 
-            <!-- Circle -->
-            <button @click="currentStep = step.id" class="relative z-10 flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-white border-2 transition-all cursor-pointer" :class="[currentStep >= step.id ? 'border-indigo-600 text-indigo-600' : 'border-gray-300 text-gray-400', currentStep === step.id ? 'bg-indigo-100 ring-4 ring-indigo-50' : 'bg-white', currentStep > step.id ? 'bg-indigo-600 !text-white !border-indigo-600' : 'hover:border-gray-400']">
-              <svg v-if="currentStep > step.id" class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <!-- Circle Button -->
+            <button 
+              @click="currentStep = step.id" 
+              :disabled="!isStepClickable(step.id)"
+              class="relative z-10 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full border-2 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed" 
+              :class="{
+                'border-amber-500 bg-amber-500 text-white shadow-lg shadow-amber-100 ring-4 ring-amber-200 scale-105 font-bold': getStepStatus(step.id) === 'warning' && currentStep.value === step.id,
+                'border-amber-400 bg-amber-400 text-white shadow-md scale-100': getStepStatus(step.id) === 'warning' && currentStep.value !== step.id,
+                'border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-100 ring-4 ring-emerald-200 scale-105 font-bold': getStepStatus(step.id) === 'completed' && currentStep.value === step.id,
+                'border-emerald-500 bg-emerald-500 text-white shadow-md scale-100': getStepStatus(step.id) === 'completed' && currentStep.value !== step.id,
+                'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-lg shadow-indigo-100 ring-4 ring-indigo-200 scale-105': getStepStatus(step.id) === 'loading' && !(step.id === 4 && getStepProgressPercent(4) > 0 && getStepProgressPercent(4) < 100),
+                'border-indigo-600 bg-white text-indigo-600 shadow-md ring-4 ring-indigo-50 font-bold scale-105': getStepStatus(step.id) === 'active' && !(step.id === 4 && getStepProgressPercent(4) > 0 && getStepProgressPercent(4) < 100),
+                'border-gray-300 bg-white text-gray-400 hover:border-gray-400 hover:text-gray-600': getStepStatus(step.id) === 'pending' && !(step.id === 4 && getStepProgressPercent(4) > 0 && getStepProgressPercent(4) < 100),
+                'border-transparent bg-emerald-50/50 text-emerald-700 shadow-md scale-100': getStepStatus(step.id) === 'progress' && currentStep.value !== step.id,
+                'border-transparent bg-emerald-50 text-emerald-800 shadow-lg shadow-emerald-50 ring-4 ring-emerald-100 scale-105 font-bold': getStepStatus(step.id) === 'progress' && currentStep.value === step.id,
+                'border-transparent bg-indigo-50/50 text-indigo-600 shadow-lg ring-4 ring-indigo-100 scale-105': getStepStatus(step.id) === 'loading' && step.id === 4 && getStepProgressPercent(4) > 0 && getStepProgressPercent(4) < 100,
+                'border-transparent bg-white text-emerald-600 shadow-md ring-4 ring-emerald-50 font-bold scale-105': getStepStatus(step.id) === 'active' && step.id === 4 && getStepProgressPercent(4) > 0 && getStepProgressPercent(4) < 100
+              }"
+            >
+              <!-- Progressive SVG circle for Step 4 (Chapters) -->
+              <svg 
+                v-if="step.id === 4 && getStepProgressPercent(4) > 0 && getStepProgressPercent(4) < 100" 
+                class="absolute inset-0 w-full h-full -rotate-90 scale-105" 
+                viewBox="0 0 36 36"
+              >
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="16.5"
+                  fill="transparent"
+                  stroke="#e2e8f0"
+                  stroke-width="3"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="16.5"
+                  fill="transparent"
+                  stroke="#10b981"
+                  stroke-width="3.5"
+                  stroke-dasharray="103.67"
+                  :stroke-dashoffset="103.67 - (getStepProgressPercent(4) / 100) * 103.67"
+                  stroke-linecap="round"
+                  class="transition-all duration-500 ease-out"
+                />
               </svg>
+
+              <!-- Completed Icon -->
+              <svg v-if="getStepStatus(step.id) === 'completed'" class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+
+              <!-- Warning Icon -->
+              <svg v-else-if="getStepStatus(step.id) === 'warning'" class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              
+              <!-- Loading Spinner -->
+              <svg v-else-if="getStepStatus(step.id) === 'loading'" class="animate-spin w-5 h-5 md:w-6 md:h-6 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              
+              <!-- Active/Pending Number -->
               <span v-else class="text-sm md:text-base font-bold">{{ step.id }}</span>
+
+              <!-- Active Indicator Dot (centered at the bottom edge) -->
+              <div 
+                v-if="currentStep === step.id" 
+                class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full shadow-md ring-2 ring-white z-20 transition-all duration-300"
+                :class="{
+                  'bg-amber-500': getStepStatus(step.id) === 'warning',
+                  'bg-emerald-500': getStepStatus(step.id) === 'completed' || getStepStatus(step.id) === 'progress',
+                  'bg-indigo-600': getStepStatus(step.id) === 'loading' || getStepStatus(step.id) === 'active',
+                  'bg-gray-500': getStepStatus(step.id) === 'pending'
+                }"
+              ></div>
             </button>
 
-            <!-- Text -->
-            <span class="mt-2 text-[10px] md:text-xs font-bold text-center uppercase tracking-wider" :class="currentStep >= step.id ? 'text-indigo-700' : 'text-gray-400'">{{ step.name }}</span>
+            <!-- Step Name Text -->
+            <span 
+              class="mt-2 text-[10px] md:text-xs font-bold text-center uppercase tracking-wider transition-colors duration-300" 
+              :class="{
+                'text-amber-700 font-bold': getStepStatus(step.id) === 'warning' && currentStep.value === step.id,
+                'text-amber-600': getStepStatus(step.id) === 'warning' && currentStep.value !== step.id,
+                'text-emerald-700 font-bold': (getStepStatus(step.id) === 'completed' || getStepStatus(step.id) === 'progress') && currentStep.value === step.id,
+                'text-emerald-600': (getStepStatus(step.id) === 'completed' || getStepStatus(step.id) === 'progress') && currentStep.value !== step.id,
+                'text-indigo-600 animate-pulse': getStepStatus(step.id) === 'loading',
+                'text-indigo-700 font-bold': getStepStatus(step.id) === 'active',
+                'text-gray-400': getStepStatus(step.id) === 'pending'
+              }"
+            >
+              {{ step.name }}
+            </span>
           </li>
         </ol>
       </nav>
@@ -126,65 +215,123 @@
           <button @click="confirmResetStep(2)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             Effacer cette étape
+        <div class="text-center mb-6">
+          <button 
+            v-if="!isSubmitting"
+            @click="rerollStep(2)"
+            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 border border-indigo-100 hover:border-indigo-600 rounded-lg shadow-sm transition-all duration-200"
+            title="Régénérer la structure"
+          >
+            🔄 Régénérer la structure
           </button>
         </div>
 
-        <section class="space-y-6">
+        <!-- WARNING OUTDATED BANNER -->
+        <div v-if="stepWarnings[2]" class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl my-4 animate-fade-in flex gap-3 items-start text-left">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
           <div>
-            <div class="flex justify-between items-center mb-3">
-              <label class="block text-sm font-medium">Structure proposée</label>
-              <button @click="showRawStructure = !showRawStructure" type="button" class="text-xs text-indigo-600 font-medium bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
-                <svg v-if="!showRawStructure" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                {{ showRawStructure ? 'Mode Visuel' : 'Mode JSON Brut' }}
-              </button>
-            </div>
+            <h4 class="font-bold text-amber-800">Données désynchronisées</h4>
+            <p class="text-sm text-amber-700 mt-1">
+              Les étapes précédentes ont été modifiées. Cette structure n'est plus basée sur les dernières informations de la base du récit.
+              Il est recommandé de la régénérer pour maintenir la cohérence.
+            </p>
+          </div>
+        </div>
 
-            <div v-if="!showRawStructure && structureCards && structureCards.length > 0" class="space-y-4">
-              <div v-for="(chap, idx) in structureCards" :key="idx" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm relative group hover:border-indigo-300 transition-colors">
-                <div class="flex justify-between items-center mb-3">
-                  <div class="flex items-center gap-2">
-                    <span class="bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{{ chap.chapNum || idx + 1 }}</span>
-                    <h3 class="font-bold text-indigo-800">Chapitre {{ chap.chapNum || idx + 1 }}</h3>
-                  </div>
-                  <button @click="removeChapter(idx)" type="button" class="text-red-500 hover:bg-red-100 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" title="Supprimer ce chapitre">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  </button>
-                </div>
-                <input type="text" v-model="chap.title" class="w-full font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg p-2.5 mb-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow" placeholder="Titre du chapitre" />
-                <textarea v-model="chap.resume" v-auto-resize rows="2" class="w-full text-sm text-gray-600 bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none overflow-hidden" placeholder="Résumé du chapitre..."></textarea>
+        <!-- LOADING STATE -->
+        <div v-if="isSubmitting" class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-10 flex flex-col items-center justify-center space-y-6 shadow-sm my-8 animate-fade-in">
+          <div class="relative flex items-center justify-center">
+            <!-- Spinner -->
+            <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent z-10"></div>
+            <!-- Pulsing outer circle -->
+            <div class="absolute rounded-full h-20 w-20 bg-indigo-100 animate-ping opacity-75"></div>
+          </div>
+          <div class="text-center space-y-2">
+            <h3 class="text-xl font-bold text-gray-800">Génération de la structure en cours...</h3>
+            <p class="text-gray-600 max-w-md">L'intelligence artificielle analyse votre pitch et vos critères de style pour composer le plan idéal.</p>
+          </div>
+          <div class="text-xs text-indigo-600 animate-pulse bg-white px-4 py-2 rounded-full border border-indigo-100">
+            ⏳ Cette opération peut prendre jusqu'à 30 secondes
+          </div>
+        </div>
+
+        <!-- ERROR STATE -->
+        <div v-else-if="status.show && !status.isSuccess" class="bg-red-50 border border-red-200 rounded-2xl p-10 flex flex-col items-center justify-center space-y-6 shadow-sm my-8 text-center animate-fade-in">
+          <div class="bg-red-100 text-red-600 p-4 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-xl font-bold text-red-800">Échec de la génération</h3>
+            <p class="text-red-700 max-w-md">{{ status.message }}</p>
+          </div>
+          <button @click="currentStep = 1" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-colors">
+            ⬅️ Retourner à l'étape 1
+          </button>
+        </div>
+
+        <!-- MAIN CONTENT (Only show if not loading and no error) -->
+        <div v-else class="space-y-8 animate-fade-in">
+          <section class="space-y-6">
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <label class="block text-sm font-medium">Structure proposée</label>
+                <button @click="showRawStructure = !showRawStructure" type="button" class="text-xs text-indigo-600 font-medium bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+                  <svg v-if="!showRawStructure" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                  {{ showRawStructure ? 'Mode Visuel' : 'Mode JSON Brut' }}
+                </button>
               </div>
 
-              <button @click="addChapter" type="button" class="w-full py-4 border-2 border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50 hover:border-indigo-400 font-medium transition-colors flex justify-center items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                Ajouter un chapitre
-              </button>
+              <div v-if="!showRawStructure && structureCards && structureCards.length > 0" class="space-y-4">
+                <div v-for="(chap, idx) in structureCards" :key="idx" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm relative group hover:border-indigo-300 transition-colors">
+                  <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                      <span class="bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{{ chap.chapNum || idx + 1 }}</span>
+                      <h3 class="font-bold text-indigo-800">Chapitre {{ chap.chapNum || idx + 1 }}</h3>
+                    </div>
+                    <button @click="removeChapter(idx)" type="button" class="text-red-500 hover:bg-red-100 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" title="Supprimer ce chapitre">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  </div>
+                  <input type="text" v-model="chap.title" class="w-full font-semibold text-gray-800 bg-white border border-gray-300 rounded-lg p-2.5 mb-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow" placeholder="Titre du chapitre" />
+                  <textarea v-model="chap.resume" v-auto-resize rows="2" class="w-full text-sm text-gray-600 bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none overflow-hidden" placeholder="Résumé du chapitre..."></textarea>
+                </div>
+
+                <button @click="addChapter" type="button" class="w-full py-4 border-2 border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50 hover:border-indigo-400 font-medium transition-colors flex justify-center items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                  Ajouter un chapitre
+                </button>
+              </div>
+
+              <div v-else>
+                <textarea v-model="receivedStructure" rows="15" class="w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-4 border font-mono text-sm leading-relaxed" placeholder="La structure générée apparaîtra ici (format JSON supporté)..."></textarea>
+              </div>
             </div>
 
-            <div v-else>
-              <textarea v-model="receivedStructure" rows="15" class="w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-4 border font-mono text-sm leading-relaxed" placeholder="La structure générée apparaîtra ici (format JSON supporté)..."></textarea>
+            <div>
+              <label class="block text-sm font-medium mb-1">Demande de modification (Optionnel)</label>
+              <textarea v-model="userFeedback" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border" placeholder="Ex: Rendre le chapitre 3 plus sombre..."></textarea>
             </div>
+          </section>
+
+          <section class="pt-6 border-t flex flex-col md:flex-row gap-4">
+            <button @click="submitStep2(false)" :disabled="isSubmitting2" class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-bold py-4 px-8 rounded-xl shadow-sm transition-colors flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
+              <span v-if="isSubmitting2 && !isValidating">⏳ Envoi...</span>
+              <span v-else>🔄 Demander modifications</span>
+            </button>
+            <button @click="submitStep2(true)" :disabled="isSubmitting2" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
+              <span v-if="isSubmitting2 && isValidating">⏳ Validation...</span>
+              <span v-else>✅ Valider la structure</span>
+            </button>
+          </section>
+
+          <div v-if="status2.show" :class="['rounded-lg p-4 text-center font-medium', status2.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
+            {{ status2.message }}
           </div>
-
-          <div>
-            <label class="block text-sm font-medium mb-1">Demande de modification (Optionnel)</label>
-            <textarea v-model="userFeedback" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border" placeholder="Ex: Rendre le chapitre 3 plus sombre..."></textarea>
-          </div>
-        </section>
-
-        <section class="pt-6 border-t flex flex-col md:flex-row gap-4">
-          <button @click="submitStep2(false)" :disabled="isSubmitting2" class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-bold py-4 px-8 rounded-xl shadow-sm transition-colors flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
-            <span v-if="isSubmitting2 && !isValidating">⏳ Envoi...</span>
-            <span v-else>🔄 Demander modifications</span>
-          </button>
-          <button @click="submitStep2(true)" :disabled="isSubmitting2" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
-            <span v-if="isSubmitting2 && isValidating">⏳ Validation...</span>
-            <span v-else>✅ Valider la structure</span>
-          </button>
-        </section>
-
-        <div v-if="status2.show" :class="['rounded-lg p-4 text-center font-medium', status2.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-          {{ status2.message }}
         </div>
       </div>
 
@@ -198,19 +345,75 @@
           <button @click="confirmResetStep(3)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             Effacer cette étape
+          <button 
+            v-if="!isSubmitting2"
+            @click="rerollStep(3)"
+            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 border border-indigo-100 hover:border-indigo-600 rounded-lg shadow-sm transition-all duration-200"
+            title="Régénérer les personnages"
+          >
+            🔄 Régénérer les personnages
           </button>
         </div>
 
-        <section class="space-y-6">
+        <!-- WARNING OUTDATED BANNER -->
+        <div v-if="stepWarnings[3]" class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl my-4 animate-fade-in flex gap-3 items-start text-left">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
           <div>
-            <div class="flex justify-between items-center mb-3">
-              <label class="block text-sm font-medium">Liste des personnages et caractéristiques (Modifiable)</label>
-              <button @click="showRawPersonnages = !showRawPersonnages" type="button" class="text-xs text-indigo-600 font-medium bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
-                <svg v-if="!showRawPersonnages" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                {{ showRawPersonnages ? 'Mode Visuel' : 'Mode JSON Brut' }}
-              </button>
-            </div>
+            <h4 class="font-bold text-amber-800">Données désynchronisées</h4>
+            <p class="text-sm text-amber-700 mt-1">
+              La structure de l'étape précédente a été modifiée ou régénérée. Ces personnages ne sont plus basés sur la dernière structure.
+              Il est recommandé de les régénérer pour maintenir la cohérence du récit.
+            </p>
+          </div>
+        </div>
+
+        <!-- LOADING STATE -->
+        <div v-if="isSubmitting2 && isValidating" class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-10 flex flex-col items-center justify-center space-y-6 shadow-sm my-8 animate-fade-in">
+          <div class="relative flex items-center justify-center">
+            <!-- Spinner -->
+            <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent z-10"></div>
+            <!-- Pulsing outer circle -->
+            <div class="absolute rounded-full h-20 w-20 bg-indigo-100 animate-ping opacity-75"></div>
+          </div>
+          <div class="text-center space-y-2">
+            <h3 class="text-xl font-bold text-gray-800">Génération des personnages en cours...</h3>
+            <p class="text-gray-600 max-w-md">L'intelligence artificielle imagine les protagonistes, leurs traits psychologiques et physiques en fonction de la structure validée.</p>
+          </div>
+          <div class="text-xs text-indigo-600 animate-pulse bg-white px-4 py-2 rounded-full border border-indigo-100">
+            ⏳ Cette opération peut prendre jusqu'à 30 secondes
+          </div>
+        </div>
+
+        <!-- ERROR STATE -->
+        <div v-else-if="status2.show && !status2.isSuccess" class="bg-red-50 border border-red-200 rounded-2xl p-10 flex flex-col items-center justify-center space-y-6 shadow-sm my-8 text-center animate-fade-in">
+          <div class="bg-red-100 text-red-600 p-4 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-xl font-bold text-red-800">Échec de la génération</h3>
+            <p class="text-red-700 max-w-md">{{ status2.message }}</p>
+          </div>
+          <button @click="currentStep = 2" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-colors">
+            ⬅️ Retourner à l'étape 2
+          </button>
+        </div>
+
+        <!-- MAIN CONTENT (Only show if not loading and no error) -->
+        <div v-else class="space-y-8 animate-fade-in">
+          <section class="space-y-6">
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <label class="block text-sm font-medium">Liste des personnages et caractéristiques (Modifiable)</label>
+                <button @click="showRawPersonnages = !showRawPersonnages" type="button" class="text-xs text-indigo-600 font-medium bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+                  <svg v-if="!showRawPersonnages" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                  {{ showRawPersonnages ? 'Mode Visuel' : 'Mode JSON Brut' }}
+                </button>
+              </div>
 
             <div v-if="!showRawPersonnages && personnagesCards && personnagesCards.length > 0" class="space-y-4">
               <div v-for="(perso, idx) in personnagesCards" :key="idx" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm relative group hover:border-indigo-300 transition-colors">
@@ -234,40 +437,57 @@
                   <div v-for="(value, key) in perso" :key="key" v-show="key !== 'Nom'">
                     <label class="block text-xs font-semibold text-gray-500 mb-1 capitalize">{{ String(key).replace(/_/g, ' ') }}</label>
                     <textarea v-model="perso[key]" v-auto-resize rows="1" class="w-full text-sm text-gray-700 bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none overflow-hidden" :placeholder="String(key).replace(/_/g, ' ')"></textarea>
+              <div v-if="!showRawPersonnages && personnagesCards && personnagesCards.length > 0" class="space-y-4">
+                <div v-for="(perso, idx) in personnagesCards" :key="idx" class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-sm relative group hover:border-indigo-300 transition-colors">
+                  <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2 w-full">
+                      <span class="bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0">{{ idx + 1 }}</span>
+                      <input type="text" v-model="perso.Nom" class="font-bold text-indigo-800 bg-transparent border-b border-transparent focus:border-indigo-500 focus:outline-none px-1 py-0.5 text-lg w-full max-w-sm" placeholder="Nom du personnage" />
+                    </div>
+                    <button @click="removePersonnage(idx)" type="button" class="text-red-500 hover:bg-red-100 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Supprimer ce personnage">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-for="(value, key) in perso" :key="key" v-show="key !== 'Nom'">
+                      <label class="block text-xs font-semibold text-gray-500 mb-1 capitalize">{{ String(key).replace(/_/g, ' ') }}</label>
+                      <textarea v-model="perso[key]" v-auto-resize rows="1" class="w-full text-sm text-gray-700 bg-white border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-none overflow-hidden" :placeholder="String(key).replace(/_/g, ' ')"></textarea>
+                    </div>
                   </div>
                 </div>
+
+                <button @click="addPersonnage" type="button" class="w-full py-4 border-2 border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50 hover:border-indigo-400 font-medium transition-colors flex justify-center items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                  Ajouter un personnage
+                </button>
               </div>
 
-              <button @click="addPersonnage" type="button" class="w-full py-4 border-2 border-dashed border-indigo-300 text-indigo-600 rounded-xl hover:bg-indigo-50 hover:border-indigo-400 font-medium transition-colors flex justify-center items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                Ajouter un personnage
-              </button>
+              <div v-else>
+                <textarea v-model="receivedPersonnages" rows="15" class="w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-4 border font-mono text-sm leading-relaxed" placeholder="Les personnages générés apparaîtront ici (format JSON supporté)..."></textarea>
+              </div>
             </div>
 
-            <div v-else>
-              <textarea v-model="receivedPersonnages" rows="15" class="w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-4 border font-mono text-sm leading-relaxed" placeholder="Les personnages générés apparaîtront ici (format JSON supporté)..."></textarea>
+            <div>
+              <label class="block text-sm font-medium mb-1">Demande de modification (Optionnel)</label>
+              <textarea v-model="userFeedbackPersonnages" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border" placeholder="Ex: Ajouter un antagoniste plus rusé ou changer le métier du héros..."></textarea>
             </div>
+          </section>
+
+          <section class="pt-6 border-t flex flex-col md:flex-row gap-4">
+            <button @click="submitStep3(false)" :disabled="isSubmitting3" class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-bold py-4 px-8 rounded-xl shadow-sm transition-colors flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
+              <span v-if="isSubmitting3 && !isValidating3">⏳ Envoi...</span>
+              <span v-else>🔄 Demander modifications</span>
+            </button>
+            <button @click="submitStep3(true)" :disabled="isSubmitting3" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
+              <span v-if="isSubmitting3 && isValidating3">⏳ Validation...</span>
+              <span v-else>✅ Valider les personnages</span>
+            </button>
+          </section>
+
+          <div v-if="status3.show" :class="['rounded-lg p-4 text-center font-medium', status3.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
+            {{ status3.message }}
           </div>
-
-          <div>
-            <label class="block text-sm font-medium mb-1">Demande de modification (Optionnel)</label>
-            <textarea v-model="userFeedbackPersonnages" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border" placeholder="Ex: Ajouter un antagoniste plus rusé ou changer le métier du héros..."></textarea>
-          </div>
-        </section>
-
-        <section class="pt-6 border-t flex flex-col md:flex-row gap-4">
-          <button @click="submitStep3(false)" :disabled="isSubmitting3" class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-bold py-4 px-8 rounded-xl shadow-sm transition-colors flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
-            <span v-if="isSubmitting3 && !isValidating3">⏳ Envoi...</span>
-            <span v-else>🔄 Demander modifications</span>
-          </button>
-          <button @click="submitStep3(true)" :disabled="isSubmitting3" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed">
-            <span v-if="isSubmitting3 && isValidating3">⏳ Validation...</span>
-            <span v-else>✅ Valider les personnages</span>
-          </button>
-        </section>
-
-        <div v-if="status3.show" :class="['rounded-lg p-4 text-center font-medium', status3.isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-          {{ status3.message }}
         </div>
       </div>
 
@@ -281,18 +501,73 @@
           <button @click="confirmResetStep(4)" type="button" class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-2 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1.5 shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             Effacer cette étape
+          <button 
+            v-if="!isSubmitting3"
+            @click="rerollStep(4)"
+            class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 border border-indigo-100 hover:border-indigo-600 rounded-lg shadow-sm transition-all duration-200"
+            title="Régénérer le livre"
+          >
+            🔄 Régénérer le livre
           </button>
         </div>
 
-        <ChapterGenerator />
+        <!-- WARNING OUTDATED BANNER -->
+        <div v-if="stepWarnings[4]" class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl my-4 animate-fade-in flex gap-3 items-start text-left">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <h4 class="font-bold text-amber-800">Données désynchronisées</h4>
+            <p class="text-sm text-amber-700 mt-1">
+              Les personnages ou la structure des étapes précédentes ont été modifiés. Les chapitres rédigés ou en cours ne correspondent plus aux dernières données.
+              Il est recommandé de régénérer le livre pour assurer la cohérence globale.
+            </p>
+          </div>
+        </div>
 
+        <!-- LOADING STATE -->
+        <div v-if="isSubmitting3 && isValidating3" class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-10 flex flex-col items-center justify-center space-y-6 shadow-sm my-8 animate-fade-in">
+          <div class="relative flex items-center justify-center">
+            <!-- Spinner -->
+            <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent z-10"></div>
+            <!-- Pulsing outer circle -->
+            <div class="absolute rounded-full h-20 w-20 bg-indigo-100 animate-ping opacity-75"></div>
+          </div>
+          <div class="text-center space-y-2">
+            <h3 class="text-xl font-bold text-gray-800">Génération du livre en cours...</h3>
+            <p class="text-gray-600 max-w-md">L'intelligence artificielle rédige les premiers chapitres de votre livre en se basant sur le plan et les personnages validés.</p>
+          </div>
+          <div class="text-xs text-indigo-600 animate-pulse bg-white px-4 py-2 rounded-full border border-indigo-100">
+            ⏳ Cette opération peut prendre jusqu'à une minute
+          </div>
+        </div>
 
-
-        <section class="pt-6 border-t mt-8">
-          <button @click="currentStep = 5" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-lg">
-            <span>Aller à l'exportation finale ➡️</span>
+        <!-- ERROR STATE -->
+        <div v-else-if="status3.show && !status3.isSuccess" class="bg-red-50 border border-red-200 rounded-2xl p-10 flex flex-col items-center justify-center space-y-6 shadow-sm my-8 text-center animate-fade-in">
+          <div class="bg-red-100 text-red-600 p-4 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <h3 class="text-xl font-bold text-red-800">Échec de la génération</h3>
+            <p class="text-red-700 max-w-md">{{ status3.message }}</p>
+          </div>
+          <button @click="currentStep = 3" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-colors">
+            ⬅️ Retourner à l'étape 3
           </button>
-        </section>
+        </div>
+
+        <!-- MAIN CONTENT (Only show if not loading and no error) -->
+        <div v-else class="space-y-8 animate-fade-in">
+          <ChapterGenerator />
+
+          <section class="pt-6 border-t mt-8">
+            <button @click="currentStep = 5" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-2 text-lg">
+              <span>Aller à l'exportation finale ➡️</span>
+            </button>
+          </section>
+        </div>
       </div>
 
       <!-- ÉTAPE 5: FINALE -->
@@ -314,7 +589,7 @@
               </div>
 
               <div>
-                <label class="block text-sm font-semibold mb-2 text-gray-700">Format de page</label>
+                <label class="block text-sm font-semibold mb-2 text-gray-700">Format de page de base</label>
                 <select v-model="exportSettings.format" class="w-full border-gray-300 rounded-lg shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500 bg-white">
                   <option value="A4">A4 (Standard, Impression)</option>
                   <option value="A5">A5 (Roman, Format poche)</option>
@@ -324,9 +599,9 @@
               <div>
                 <label class="block text-sm font-semibold mb-2 text-gray-700">Police de caractères</label>
                 <select v-model="exportSettings.police" class="w-full border-gray-300 rounded-lg shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500 bg-white">
-                  <option value="serif">Serif (Classique, style Roman)</option>
-                  <option value="sans-serif">Sans-serif (Moderne, Épuré)</option>
-                  <option value="monospace">Monospace (Machine à écrire)</option>
+                  <option v-for="f in AVAILABLE_FONTS" :key="f.id" :value="f.id">
+                    {{ f.name }}
+                  </option>
                 </select>
               </div>
 
@@ -335,7 +610,12 @@
                   <span>Taille des caractères</span>
                   <span class="text-indigo-600 bg-indigo-50 px-2 rounded">{{ exportSettings.taille }}pt</span>
                 </label>
-                <input type="range" v-model.number="exportSettings.taille" min="9" max="18" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer">
+                <input type="range" v-model.number="exportSettings.taille" min="8" max="28" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-[10px] text-gray-400 mt-1">
+                  <span>8pt (Très compact)</span>
+                  <span>12pt (Normal)</span>
+                  <span>28pt (Très grand)</span>
+                </div>
               </div>
 
               <div>
@@ -345,34 +625,269 @@
                 </label>
                 <input type="range" v-model.number="exportSettings.marges" min="1" max="5" step="0.5" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer">
               </div>
+
+              <!-- Mode Livret Section -->
+              <div class="border-t pt-4 space-y-4">
+                <div class="flex items-center justify-between">
+                  <label class="text-sm font-semibold text-gray-700">Mode Livret (Imposition)</label>
+                  <input type="checkbox" v-model="exportSettings.modeLivret" class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
+                </div>
+                <p class="text-xs text-gray-500 leading-normal">
+                  Arrange les pages deux par deux sur des feuilles paysage (A4 pour livret A5, A3 pour livret A4) prêtes à être pliées et reliées.
+                </p>
+
+                <div v-if="exportSettings.modeLivret" class="space-y-2 animate-fade-in">
+                  <label class="block text-sm font-semibold text-gray-700">Regroupement par cahier (Feuilles)</label>
+                  <select v-model.number="exportSettings.feuillesParCahier" class="w-full border-gray-300 rounded-lg shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                    <option :value="0">Cahier unique (Tout regrouper)</option>
+                    <option :value="1">1 feuille (Cahier de 4 pages)</option>
+                    <option :value="2">2 feuilles (Cahier de 8 pages)</option>
+                    <option :value="4">4 feuilles (Cahier de 16 pages - Standard)</option>
+                    <option :value="8">8 feuilles (Cahier de 32 pages)</option>
+                    <option :value="12">12 feuilles (Cahier de 48 pages)</option>
+                    <option :value="16">16 feuilles (Cahier de 64 pages)</option>
+                  </select>
+                  <p class="text-[10px] text-indigo-600 bg-indigo-50 p-2.5 rounded-lg">
+                    💡 Un cahier de {{ exportSettings.feuillesParCahier > 0 ? exportSettings.feuillesParCahier : 'toutes' }} feuille(s) contiendra {{ exportSettings.feuillesParCahier > 0 ? exportSettings.feuillesParCahier * 4 : 'toutes les' }} pages imprimées. Des pages blanches seront automatiquement ajoutées à la fin si nécessaire.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <!-- Preview -->
             <div class="flex flex-col">
               <h3 class="font-bold text-gray-800 mb-4 px-2 text-lg">Aperçu du rendu</h3>
               <div
-                class="flex-1 bg-gray-200 rounded-xl overflow-hidden shadow-inner flex items-center justify-center p-4 md:p-8 transition-all"
-                :style="{ fontFamily: getPreviewFontFamily() }"
+                class="flex-1 bg-gray-200 rounded-xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-4 md:p-8"
               >
                 <!-- Page container -->
-                <div
-                  class="bg-white shadow-xl transition-all flex flex-col justify-start text-justify border relative"
+                <div 
+                  class="bg-white shadow-xl transition-all border relative overflow-hidden"
                   :style="{
-                    width: exportSettings.format === 'A5' ? '280px' : '330px',
-                    height: exportSettings.format === 'A5' ? '396px' : '467px',
-                    padding: `${exportSettings.marges * 5}px`,
-                    fontSize: `${exportSettings.taille}px`,
-                    lineHeight: '1.5'
+                    width: previewDimensions.width,
+                    height: previewDimensions.height,
+                    fontFamily: getPreviewFontFamily()
                   }"
                 >
-                  <!-- Subtle page running header -->
-                  <div class="w-full text-[8px] text-gray-400 border-b border-gray-100 pb-1 mb-4 flex justify-between uppercase tracking-wider">
-                    <span>{{ form.titre || 'Mon Roman' }}</span>
-                    <span>Page 1</span>
-                  </div>
+                  <template v-if="paginatedPages && paginatedPages.length > 0">
+                    <template v-if="paginatedPages[previewPageIndex]">
+                      <!-- Cover Page -->
+                      <div v-if="paginatedPages[previewPageIndex].type === 'cover'" class="relative w-full h-full p-6 flex flex-col justify-between" style="box-sizing: border-box;">
+                        <!-- Elegant double border -->
+                        <div 
+                          class="absolute border-2 border-indigo-600"
+                          :style="{
+                            top: `${1.2 * previewDimensions.scale}px`,
+                            bottom: `${1.2 * previewDimensions.scale}px`,
+                            left: `${1.2 * previewDimensions.scale}px`,
+                            right: `${1.2 * previewDimensions.scale}px`
+                          }"
+                        ></div>
+                        <div 
+                          class="absolute border border-slate-200 pointer-events-none"
+                          :style="{
+                            top: `${1.35 * previewDimensions.scale}px`,
+                            bottom: `${1.35 * previewDimensions.scale}px`,
+                            left: `${1.35 * previewDimensions.scale}px`,
+                            right: `${1.35 * previewDimensions.scale}px`
+                          }"
+                        ></div>
+                        
+                        <!-- Title -->
+                        <div class="text-center mt-12 z-10">
+                          <h1 
+                            class="font-bold text-slate-800 uppercase tracking-wide px-2"
+                            :style="{ fontSize: `${(26 * 2.54 / 72) * previewDimensions.scale}px`, lineHeight: '1.2' }"
+                          >
+                            {{ form.titre || 'Mon Roman' }}
+                          </h1>
+                          <div class="w-1/4 h-[2px] bg-indigo-600 mx-auto my-4"></div>
+                          <p class="text-[10px] italic text-slate-500">Un récit co-écrit par l'Homme & l'Intelligence Artificielle</p>
+                        </div>
+                        
+                        <!-- Synopsis -->
+                        <div v-if="form.pitch" class="text-center px-6 max-h-[160px] overflow-hidden z-10 mb-4">
+                          <h5 class="text-[9px] font-bold text-slate-500 tracking-wider mb-1 uppercase">Synopsis</h5>
+                          <div class="w-1/12 h-[1px] bg-slate-200 mx-auto mb-2"></div>
+                          <p class="text-[10px] text-slate-600 line-clamp-6 text-justify leading-relaxed">{{ form.pitch }}</p>
+                        </div>
+                        
+                        <!-- Context -->
+                        <div v-if="form.contexte && (form.contexte.epoque || form.contexte.lieu || form.contexte.culture)" class="text-center text-[8px] font-bold text-slate-400 border-t pt-3 uppercase tracking-wider mb-4 z-10 mx-6">
+                          <span v-if="form.contexte.epoque">Époque : {{ form.contexte.epoque }}</span>
+                          <span v-if="form.contexte.epoque && (form.contexte.lieu || form.contexte.culture)"> &nbsp;|&nbsp; </span>
+                          <span v-if="form.contexte.lieu">Lieu : {{ form.contexte.lieu }}</span>
+                          <span v-if="form.contexte.lieu && form.contexte.culture"> &nbsp;|&nbsp; </span>
+                          <span v-if="form.contexte.culture">Culture : {{ form.contexte.culture }}</span>
+                        </div>
+                      </div>
 
-                  <h4 class="font-bold mb-2 text-center w-full" :style="{ fontSize: `${exportSettings.taille * 1.3}px` }">Chapitre 1 : Le Début</h4>
-                  <p class="w-full overflow-hidden text-ellipsis leading-relaxed" :style="{ textIndent: exportSettings.police === 'serif' ? '12px' : '0' }">Il était une fois, dans une contrée lointaine, une histoire qui s'écrivait d'elle-même. Les mots coulaient sur le papier avec une fluidité déconcertante, guidés par une intelligence artificielle tissant les fils du destin de personnages encore inconnus la veille. La nuit tombait lentement sur la ville endormie, effaçant les contours...</p>
+                      <!-- Placeholder Page -->
+                      <div v-else-if="paginatedPages[previewPageIndex].type === 'placeholder'" class="w-full h-full flex flex-col items-center justify-center p-8 text-center text-slate-400 italic">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <p class="text-sm">{{ paginatedPages[previewPageIndex].text }}</p>
+                      </div>
+
+                      <!-- Standard Page -->
+                      <div v-else class="w-full h-full relative">
+                        <!-- Running Header -->
+                        <div 
+                          v-if="!paginatedPages[previewPageIndex].isChapterStart && paginatedPages[previewPageIndex].pageNum > 1"
+                          class="absolute italic text-slate-400 flex items-center select-none"
+                          :style="{
+                            top: `${(1.2 - fontToCm(8.5)) * previewDimensions.scale}px`,
+                            left: `${exportSettings.marges * previewDimensions.scale}px`,
+                            right: `${exportSettings.marges * previewDimensions.scale}px`,
+                            fontSize: `${(8.5 * 2.54 / 72) * previewDimensions.scale}px`
+                          }"
+                        >
+                          <span class="truncate max-w-[80%]">{{ form.titre || 'Mon Roman' }}</span>
+                        </div>
+                        <!-- Running Header Line -->
+                        <div 
+                          v-if="!paginatedPages[previewPageIndex].isChapterStart && paginatedPages[previewPageIndex].pageNum > 1"
+                          class="absolute border-t border-slate-100"
+                          :style="{
+                            top: `${1.4 * previewDimensions.scale}px`,
+                            left: `${exportSettings.marges * previewDimensions.scale}px`,
+                            right: `${exportSettings.marges * previewDimensions.scale}px`
+                          }"
+                        ></div>
+
+                        <!-- Elements -->
+                        <template v-for="(el, idx) in paginatedPages[previewPageIndex].elements" :key="idx">
+                          <!-- Text line -->
+                          <div 
+                            v-if="el.type === 'line'"
+                            class="absolute leading-none whitespace-pre select-none text-left"
+                            :style="{
+                              top: `${(el.y - fontToCm(el.fontSize)) * previewDimensions.scale}px`,
+                              left: `${el.x * previewDimensions.scale}px`,
+                              fontSize: `${(el.fontSize * 2.54 / 72) * previewDimensions.scale}px`
+                            }"
+                          >
+                            <span 
+                              v-for="(word, wIdx) in el.words" 
+                              :key="wIdx"
+                              :style="{
+                                fontWeight: (word.bold || el.fontWeight === 'bold') ? 'bold' : 'normal',
+                                fontStyle: (word.italic || el.fontWeight === 'italic') ? 'italic' : 'normal'
+                              }"
+                            >{{ word.text }}</span>
+                          </div>
+
+                          <!-- Chapter Header -->
+                          <div 
+                            v-else-if="el.type === 'chapter-header'"
+                            class="absolute left-0 right-0 text-center font-bold text-slate-800 leading-none select-none"
+                            :style="{
+                              top: `${(el.y - fontToCm(el.fontSize)) * previewDimensions.scale}px`,
+                              fontSize: `${(el.fontSize * 2.54 / 72) * previewDimensions.scale}px`
+                            }"
+                          >
+                            <div 
+                              v-for="(line, lIdx) in el.lines" 
+                              :key="lIdx"
+                              :style="{ marginTop: lIdx > 0 ? `${(el.fontSize * 0.4 * 2.54 / 72) * previewDimensions.scale}px` : '0px' }"
+                            >
+                              {{ line }}
+                            </div>
+                          </div>
+
+                          <!-- Bullet -->
+                          <div 
+                            v-else-if="el.type === 'bullet'"
+                            class="absolute text-indigo-600 font-normal leading-none select-none"
+                            :style="{
+                              top: `${(el.y - fontToCm(el.fontSize)) * previewDimensions.scale}px`,
+                              left: `${el.x * previewDimensions.scale}px`,
+                              fontSize: `${(el.fontSize * 2.54 / 72) * previewDimensions.scale}px`
+                            }"
+                          >
+                            •
+                          </div>
+
+                          <!-- List number -->
+                          <div 
+                            v-else-if="el.type === 'number'"
+                            class="absolute text-indigo-600 font-bold leading-none select-none"
+                            :style="{
+                              top: `${(el.y - fontToCm(el.fontSize)) * previewDimensions.scale}px`,
+                              left: `${el.x * previewDimensions.scale}px`,
+                              fontSize: `${(el.fontSize * 2.54 / 72) * previewDimensions.scale}px`
+                            }"
+                          >
+                            {{ el.text }}
+                          </div>
+
+                          <!-- Blockquote line -->
+                          <div 
+                            v-else-if="el.type === 'blockquote-line'"
+                            class="absolute border-l-2 border-slate-200 select-none"
+                            :style="{
+                              top: `${(el.y - el.h * 0.7) * previewDimensions.scale}px`,
+                              left: `${el.x * previewDimensions.scale}px`,
+                              height: `${el.h * previewDimensions.scale}px`
+                            }"
+                          ></div>
+                        </template>
+
+                        <!-- Page number -->
+                        <div 
+                          v-if="paginatedPages[previewPageIndex].pageNum > 1"
+                          class="absolute text-center text-slate-500 font-normal select-none"
+                          :style="{
+                            top: `${(previewDimensions.hCm - 1.2 - fontToCm(9)) * previewDimensions.scale}px`,
+                            left: '0px',
+                            right: '0px',
+                            fontSize: '9pt'
+                          }"
+                        >
+                          {{ paginatedPages[previewPageIndex].pageNum - 1 }}
+                        </div>
+                      </div>
+                    </template>
+                  </template>
+                </div>
+
+                <!-- Preview Controls -->
+                <div v-if="paginatedPages && paginatedPages.length > 0" class="w-full max-w-[330px] flex items-center justify-between mt-4 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 shadow-sm gap-2">
+                  <button 
+                    @click="prevPreviewPage" 
+                    :disabled="previewPageIndex <= 0" 
+                    class="p-1.5 rounded-md text-gray-500 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                    type="button"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  <select 
+                    v-model="previewPageIndex" 
+                    class="text-[11px] font-medium bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-700 flex-1 max-w-[150px] truncate"
+                  >
+                    <option v-for="(p, pIdx) in paginatedPages" :key="pIdx" :value="pIdx">
+                      {{ pIdx === 0 ? 'Couverture' : `Page ${pIdx} ${p.chapterTitle ? '(Ch. ' + p.chapterNum + ')' : ''}` }}
+                    </option>
+                  </select>
+
+                  <span class="text-[10px] font-bold text-gray-400 whitespace-nowrap">
+                    / {{ paginatedPages.length }}
+                  </span>
+
+                  <button 
+                    @click="nextPreviewPage" 
+                    :disabled="previewPageIndex >= paginatedPages.length - 1" 
+                    class="p-1.5 rounded-md text-gray-500 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                    type="button"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -380,11 +895,19 @@
         </section>
 
         <section class="pt-8 border-t mt-8">
-          <button @click="genererPdf" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-3 text-xl">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button 
+            @click="genererPdf" 
+            :disabled="isGeneratingPdf"
+            class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-5 px-8 rounded-xl shadow-lg transition-colors flex justify-center items-center gap-3 text-xl cursor-pointer"
+          >
+            <svg v-if="isGeneratingPdf" class="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span>Obtenir mon Livre (Format PDF)</span>
+            <span>{{ isGeneratingPdf ? 'Génération du PDF en cours...' : 'Obtenir mon Livre (Format PDF)' }}</span>
           </button>
         </section>
       </div>
@@ -500,6 +1023,9 @@ import { storeToRefs } from 'pinia';
 import { useBookStore } from '../stores/bookStore';
 import ChapterGenerator from '../components/ChapterGenerator.vue';
 import { generateBookPDF } from '../utils/pdfGenerator';
+import { jsPDF } from 'jspdf';
+import { paginateBook } from '../utils/bookPaginator';
+import { AVAILABLE_FONTS, loadFontInBrowser, loadFontInJsPDF } from '../utils/fontManager';
 
 // --- STORE INITIALIZATION ---
 const bookStore = useBookStore();
@@ -508,6 +1034,7 @@ const {
   form,
   receivedStructure,
   receivedPersonnages,
+  stepWarnings,
   chapitres,
   exportSettings,
   webhookUrl,
@@ -517,7 +1044,8 @@ const {
   selectedModel,
   isSubmitting, status,
   isSubmitting2, isValidating, status2, userFeedback,
-  isSubmitting3, isValidating3, status3, userFeedbackPersonnages
+  isSubmitting3, isValidating3, status3, userFeedbackPersonnages,
+  isWriting
 } = storeToRefs(bookStore);
 
 const { submitForm, submitStep2, submitStep3, fetchChapitres } = bookStore;
@@ -530,6 +1058,114 @@ const stepsList = [
   { id: 4, name: 'Chapitres' },
   { id: 5, name: 'Finale' }
 ];
+
+// --- STEPPER HELPERS ---
+const isStepLoading = (stepId) => {
+  if (stepId === 2) return isSubmitting.value;
+  if (stepId === 3) return isSubmitting2.value && isValidating.value;
+  if (stepId === 4) return (isSubmitting3.value && isValidating3.value) || isWriting.value;
+  if (stepId === 5) return isGeneratingPdf.value;
+  return false;
+};
+
+const isStepCompleted = (stepId) => {
+  if (stepId === 1) {
+    return form.value.titre && form.value.titre.trim() !== '' && 
+           form.value.pitch && form.value.pitch.trim() !== '';
+  }
+  if (stepId === 2) {
+    const val = receivedStructure.value;
+    if (!val) return false;
+    if (typeof val === 'string') {
+      return val.trim() !== '' && val !== '{}';
+    }
+    if (Array.isArray(val)) {
+      return val.length > 0;
+    }
+    return Object.keys(val).length > 0;
+  }
+  if (stepId === 3) {
+    const val = receivedPersonnages.value;
+    if (!val) return false;
+    if (typeof val === 'string') {
+      return val.trim() !== '' && val !== '{}';
+    }
+    if (Array.isArray(val)) {
+      return val.length > 0;
+    }
+    return Object.keys(val).length > 0;
+  }
+  if (stepId === 4) {
+    const total = form.value.chapitres || 1;
+    return chapitres.value && chapitres.value.length > 0 && chapitres.value.length === total;
+  }
+  return false;
+};
+
+const getStepProgressPercent = (stepId) => {
+  if (stepId === 4) {
+    if (!chapitres.value || chapitres.value.length === 0) return 0;
+    const total = form.value.chapitres || 1;
+    return Math.min(100, Math.round((chapitres.value.length / total) * 100));
+  }
+  return 0;
+};
+
+const isStepClickable = (stepId) => {
+  if (stepId === 1) return true;
+  if (stepId === currentStep.value) return true;
+  if (stepWarnings.value[stepId]) return true;
+  if (isStepCompleted(stepId)) return true;
+  if (isStepCompleted(stepId - 1)) return true;
+  if (stepId <= currentStep.value) return true;
+  return false;
+};
+
+const getStepStatus = (stepId) => {
+  if (isStepLoading(stepId)) return 'loading';
+  if (stepWarnings.value[stepId]) return 'warning';
+  if (isStepCompleted(stepId)) return 'completed';
+  if (stepId === 4 && chapitres.value && chapitres.value.length > 0 && form.value.chapitres > 0 && chapitres.value.length < form.value.chapitres) {
+    return 'progress';
+  }
+  if (currentStep.value === stepId) return 'active';
+  return 'pending';
+};
+
+const getLineClass = (index) => {
+  const currentStepObj = stepsList[index];
+  const nextStepObj = stepsList[index + 1];
+  
+  if (!nextStepObj) return 'bg-gray-200';
+  
+  if (isStepLoading(nextStepObj.id)) {
+    return 'bg-indigo-400 animate-pulse';
+  }
+  if (stepWarnings.value[nextStepObj.id]) {
+    return 'bg-amber-400';
+  }
+  if (isStepCompleted(currentStepObj.id)) {
+    return 'bg-emerald-500';
+  }
+  if (currentStep.value >= nextStepObj.id) {
+    return 'bg-indigo-600';
+  }
+  return 'bg-gray-200';
+};
+
+const rerollStep = async (stepId) => {
+  const confirmReroll = confirm("Êtes-vous sûr de vouloir régénérer cette étape ? Cela écrasera les données actuelles de ce step et marquera les étapes suivantes comme désynchronisées (en alerte).");
+  if (!confirmReroll) return;
+  
+  if (stepId === 2) {
+    await submitForm();
+  } else if (stepId === 3) {
+    await submitStep2(true);
+  } else if (stepId === 4) {
+    chapitres.value = [];
+    await submitStep3(true);
+  }
+};
 
 // --- ÉTAPE 1 : BASE DU RÉCIT ---
 const styleConfig = [
@@ -749,20 +1385,117 @@ const removePersonnage = (idx) => {
 
 // --- ÉTAPE 5 : FINALE ---
 const getPreviewFontFamily = () => {
-  if (exportSettings.value.police === 'serif') return 'Georgia, serif';
-  if (exportSettings.value.police === 'sans-serif') return 'Arial, sans-serif';
-  return 'Courier New, monospace';
+  const police = exportSettings.value.police;
+  const fontObj = AVAILABLE_FONTS.find(f => f.id === police);
+  if (!fontObj) return 'Georgia, serif';
+  if (fontObj.isBuiltIn) {
+    if (police === 'serif') return 'Georgia, serif';
+    if (police === 'sans-serif') return 'Arial, sans-serif';
+    return 'Courier New, monospace';
+  }
+  return `'${fontObj.family}', Georgia, serif`;
 };
 
-const genererPdf = () => {
-  generateBookPDF({
-    titre: form.value.titre,
-    pitch: form.value.pitch,
-    contexte: form.value.contexte,
-    chapitres: chapitres.value,
-    settings: exportSettings.value
-  });
+const fontToCm = (size) => (size * 2.54) / 72;
+
+const previewPageIndex = ref(0);
+
+const paginatedPages = ref([]);
+
+watch(
+  [
+    () => form.value.titre,
+    () => form.value.pitch,
+    () => form.value.contexte,
+    chapitres,
+    exportSettings
+  ],
+  async () => {
+    const format = exportSettings.value.format || 'A4';
+    const tempDoc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'cm',
+      format: format.toLowerCase()
+    });
+
+    const police = exportSettings.value.police;
+    
+    // Load font in both environments before rendering
+    await loadFontInBrowser(police);
+    await loadFontInJsPDF(tempDoc, police);
+
+    paginatedPages.value = paginateBook({
+      titre: form.value.titre,
+      pitch: form.value.pitch,
+      contexte: form.value.contexte,
+      chapitres: chapitres.value,
+      settings: exportSettings.value,
+      doc: tempDoc
+    });
+  },
+  { deep: true, immediate: true }
+);
+
+watch(paginatedPages, (newPages) => {
+  if (previewPageIndex.value >= newPages.length) {
+    previewPageIndex.value = Math.max(0, newPages.length - 1);
+  }
+});
+
+watch(currentStep, (newStep) => {
+  if (newStep === 5) {
+    previewPageIndex.value = 0;
+  }
+});
+
+const prevPreviewPage = () => {
+  if (previewPageIndex.value > 0) {
+    previewPageIndex.value--;
+  }
 };
+
+const nextPreviewPage = () => {
+  if (previewPageIndex.value < paginatedPages.value.length - 1) {
+    previewPageIndex.value++;
+  }
+};
+
+const previewDimensions = computed(() => {
+  const isA5 = exportSettings.value.format === 'A5';
+  const hCm = isA5 ? 21.0 : 29.7;
+  const wCm = isA5 ? 14.8 : 21.0;
+  const targetHeight = 450; // pixels
+  const scale = targetHeight / hCm;
+  const targetWidth = wCm * scale;
+  return {
+    width: `${targetWidth}px`,
+    height: `${targetHeight}px`,
+    hCm,
+    wCm,
+    scale: scale
+  };
+});
+
+const isGeneratingPdf = ref(false);
+
+const genererPdf = async () => {
+  isGeneratingPdf.value = true;
+  try {
+    await generateBookPDF({
+      titre: form.value.titre,
+      pitch: form.value.pitch,
+      contexte: form.value.contexte,
+      chapitres: chapitres.value,
+      settings: exportSettings.value
+    });
+  } catch (e) {
+    console.error("Erreur lors de la génération du PDF", e);
+  } finally {
+    isGeneratingPdf.value = false;
+  }
+};
+
+
 
 // --- PARAMÈTRES ET WEBHOOKS ---
 const isSettingsOpen = ref(false);

@@ -47,8 +47,14 @@ export const useBookStore = defineStore('book', () => {
     form.titre = '';
   }
   
-  const receivedStructure = ref(loadFromStorage('bookApp_structure', ''));
-  const receivedPersonnages = ref(loadFromStorage('bookApp_personnages', ''));
+  const receivedStructure = ref(localStorage.getItem('bookApp_structure') || '');
+  const receivedPersonnages = ref(localStorage.getItem('bookApp_personnages') || '');
+  
+  const stepWarnings = ref(loadFromStorage('bookApp_stepWarnings', {
+    2: false,
+    3: false,
+    4: false
+  }));
   
   const chapitres = ref(loadFromStorage('bookApp_chapitres', []));
   
@@ -56,10 +62,18 @@ export const useBookStore = defineStore('book', () => {
     police: 'serif',
     taille: 11,
     marges: 2.5,
-    format: 'A4'
+    format: 'A4',
+    modeLivret: false,
+    feuillesParCahier: 4
   }));
   if (exportSettings.format === undefined) {
     exportSettings.format = 'A4';
+  }
+  if (exportSettings.modeLivret === undefined) {
+    exportSettings.modeLivret = false;
+  }
+  if (exportSettings.feuillesParCahier === undefined) {
+    exportSettings.feuillesParCahier = 4;
   }
 
   const webhookUrl = ref(loadWebhook('webhookUrl', 'https://n8n.clavier.dev/webhook/structure-recit'));
@@ -73,6 +87,7 @@ export const useBookStore = defineStore('book', () => {
   watch(form, (val) => localStorage.setItem('bookApp_form', JSON.stringify(val)), { deep: true });
   watch(receivedStructure, (val) => localStorage.setItem('bookApp_structure', val));
   watch(receivedPersonnages, (val) => localStorage.setItem('bookApp_personnages', val));
+  watch(stepWarnings, (val) => localStorage.setItem('bookApp_stepWarnings', JSON.stringify(val)), { deep: true });
   watch(chapitres, (val) => localStorage.setItem('bookApp_chapitres', JSON.stringify(val)), { deep: true });
   watch(exportSettings, (val) => localStorage.setItem('bookApp_exportSettings', JSON.stringify(val)), { deep: true });
   
@@ -106,10 +121,25 @@ export const useBookStore = defineStore('book', () => {
   // Statuses for UI
   const isSubmitting = ref(false);
   const status = reactive({ show: false, isSuccess: false, message: '' });
+
+  // Chapter Writing States
+  const isWriting = ref(false);
+  const writingMode = ref('all'); // 'all' or 'single'
+  const currentWritingChapter = ref(1);
+  const chapterStatusMessage = ref('');
+  const chapterStatusError = ref(false);
   
   const submitForm = async () => {
     isSubmitting.value = true;
     status.show = false;
+    currentStep.value = 2; // Transition immediately
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Clear warning for Step 2 since we are regenerating it, and mark subsequent steps as outdated
+    stepWarnings.value[2] = false;
+    stepWarnings.value[3] = true;
+    stepWarnings.value[4] = true;
+    
     const payload = {
       base: { pitch: form.pitch, nombre_de_chapitres: form.chapitres, contexte: { ...form.contexte }, style: { ...form.style } },
       modele: selectedModel.value
@@ -119,11 +149,9 @@ export const useBookStore = defineStore('book', () => {
       const response = await fetch(getProxiedUrl(webhookUrl.value), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (response.ok) {
         receivedStructure.value = parseResponseContent(await response.text());
-        currentStep.value = 2; 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else throw new Error();
     } catch (error) {
-      status.message = '❌ Erreur de connexion au Webhook de création.';
+      status.message = '❌ Erreur de connexion au Webhook de création de structure.';
       status.isSuccess = false; status.show = true;
     } finally { isSubmitting.value = false; }
   };
@@ -150,6 +178,11 @@ export const useBookStore = defineStore('book', () => {
         structure: receivedStructure.value,
         modele: selectedModel.value
       };
+      currentStep.value = 3; // Transition immediately
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Clearing warning for step 3 and setting warning for step 4
+      stepWarnings.value[3] = false;
+      stepWarnings.value[4] = true;
     } else {
       payload = {
         base: baseData,
@@ -157,6 +190,10 @@ export const useBookStore = defineStore('book', () => {
         modele: selectedModel.value,
         corrections: userFeedback.value
       };
+      // Regenerating structure also resets its warning, but invalidates subsequent steps
+      stepWarnings.value[2] = false;
+      stepWarnings.value[3] = true;
+      stepWarnings.value[4] = true;
     }
   
     try {
@@ -167,8 +204,6 @@ export const useBookStore = defineStore('book', () => {
           if(responseText) {
             receivedPersonnages.value = parseResponseContent(responseText);
           }
-          currentStep.value = 3;
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
           receivedStructure.value = parseResponseContent(await response.text());
           status2.message = '✅ Modifications reçues. La nouvelle structure a été mise à jour.';
@@ -177,7 +212,11 @@ export const useBookStore = defineStore('book', () => {
         }
       } else throw new Error();
     } catch (error) {
-      status2.message = '❌ Erreur de connexion au Webhook.';
+      if (validate) {
+        status2.message = '❌ Erreur de connexion au Webhook de génération de personnages.';
+      } else {
+        status2.message = '❌ Erreur de connexion au Webhook de modification de structure.';
+      }
       status2.isSuccess = false; status2.show = true;
     } finally { isSubmitting2.value = false; }
   };
@@ -186,6 +225,7 @@ export const useBookStore = defineStore('book', () => {
   const isValidating3 = ref(false);
   const status3 = reactive({ show: false, isSuccess: false, message: '' });
   const userFeedbackPersonnages = ref('');
+  const autoStartChapters = ref(false);
 
   const submitStep3 = async (validate) => {
     isSubmitting3.value = true;
@@ -222,6 +262,10 @@ export const useBookStore = defineStore('book', () => {
         personnages: receivedPersonnages.value,
         modele: selectedModel.value
       };
+      currentStep.value = 4; // Transition immediately
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Clearing warning for step 4
+      stepWarnings.value[4] = false;
     } else {
       payload = {
         base: baseData,
@@ -230,6 +274,9 @@ export const useBookStore = defineStore('book', () => {
         modele: selectedModel.value,
         corrections: userFeedbackPersonnages.value
       };
+      // Regenerating personnages resets its warning, but invalidates subsequent steps
+      stepWarnings.value[3] = false;
+      stepWarnings.value[4] = true;
     }
   
     try {
@@ -263,8 +310,7 @@ export const useBookStore = defineStore('book', () => {
               isOpen: true
             });
           }
-          currentStep.value = 4;
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          autoStartChapters.value = true;
         } else {
           receivedPersonnages.value = parseResponseContent(await response.text());
           status3.message = '✅ Modifications reçues. Les personnages ont été mis à jour.';
@@ -273,7 +319,11 @@ export const useBookStore = defineStore('book', () => {
         }
       } else throw new Error();
     } catch (error) {
-      status3.message = '❌ Erreur de connexion au Webhook.';
+      if (validate) {
+        status3.message = '❌ Erreur de connexion au Webhook de génération de chapitres.';
+      } else {
+        status3.message = '❌ Erreur de connexion au Webhook de modification de personnages.';
+      }
       status3.isSuccess = false; status3.show = true;
     } finally { isSubmitting3.value = false; }
   };
@@ -357,6 +407,8 @@ export const useBookStore = defineStore('book', () => {
     form,
     receivedStructure,
     receivedPersonnages,
+    stepWarnings,
+    autoStartChapters,
     chapitres,
     exportSettings,
     webhookUrl,
@@ -371,5 +423,6 @@ export const useBookStore = defineStore('book', () => {
     resetAllData,
     deleteChapter,
     resetStep
+    isWriting, writingMode, currentWritingChapter, chapterStatusMessage, chapterStatusError
   };
 });
