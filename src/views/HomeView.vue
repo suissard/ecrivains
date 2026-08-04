@@ -931,7 +931,28 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-4">
-            <h4 class="font-semibold text-indigo-700">Modèle IA</h4>
+
+          <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-bold text-gray-800 mb-2">Sauvegarde & Partage</h4>
+            <p class="text-sm text-gray-600 mb-4">Exportez votre récit actuel pour le partager ou le sauvegarder, et importez-le plus tard.</p>
+            <div class="flex gap-3">
+              <button @click="exportProject" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-colors text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Exporter (JSON)
+              </button>
+              <button @click="triggerImport" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-colors text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+                Importer (JSON)
+              </button>
+              <input type="file" ref="fileInput" @change="handleFileUpload" accept=".json" class="hidden" />
+            </div>
+          </div>
+
+          <h4 class="font-semibold text-indigo-700">Modèle IA</h4>
             <div class="relative">
               <label class="block text-sm font-medium text-gray-700 mb-1">Modèle (OpenRouter)</label>
               <div class="relative">
@@ -1487,6 +1508,57 @@ const genererPdf = async () => {
 
 // --- PARAMÈTRES ET WEBHOOKS ---
 const isSettingsOpen = ref(false);
+
+
+const fileInput = ref(null);
+
+const exportProject = () => {
+  const data = bookStore.exportStoryData();
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const title = form.value.titre ? form.value.titre.replace(/[^a-zA-Z0-9]/g, '_') : 'recit';
+  const dateStr = new Date().toISOString().split('T')[0];
+  const filename = `${title}_${dateStr}.json`;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+const triggerImport = () => {
+  if (fileInput.value) {
+    fileInput.value.click();
+  }
+};
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (confirm('Voulez-vous vraiment écraser le récit actuel avec ce fichier ?')) {
+        bookStore.importStoryData(data);
+        isSettingsOpen.value = false;
+        alert('Récit importé avec succès !');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erreur: Le fichier JSON est invalide ou corrompu.');
+    }
+    // Reset file input
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+};
 
 // Local settings state
 const settingsUrl = ref(webhookUrl.value);
