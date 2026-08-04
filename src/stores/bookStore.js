@@ -406,7 +406,32 @@ export const useBookStore = defineStore('book', () => {
     }
   };
 
+
+  const exportStoryData = () => {
+    return {
+      currentStep: currentStep.value,
+      form: form,
+      receivedStructure: receivedStructure.value,
+      receivedPersonnages: receivedPersonnages.value,
+      stepWarnings: stepWarnings.value,
+      chapitres: chapitres.value
+    };
+  };
+
+  const importStoryData = (data) => {
+    if (data.currentStep !== undefined) currentStep.value = data.currentStep;
+    if (data.form !== undefined) {
+      Object.assign(form, data.form);
+    }
+    if (data.receivedStructure !== undefined) receivedStructure.value = data.receivedStructure;
+    if (data.receivedPersonnages !== undefined) receivedPersonnages.value = data.receivedPersonnages;
+    if (data.stepWarnings !== undefined) stepWarnings.value = data.stepWarnings;
+    if (data.chapitres !== undefined) chapitres.value = data.chapitres;
+  };
+
   return {
+    exportStoryData,
+    importStoryData,
     currentStep,
     form,
     receivedStructure,
